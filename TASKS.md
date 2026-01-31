@@ -127,50 +127,55 @@
 
 ---
 
-### 4. Mobile App (Expo + Expo Router) ⬜
+### 4. Mobile App (Expo + Expo Router) ✅
 
-#### 4.1 基盤構築
-- [ ] Expo + TypeScript セットアップ
-- [ ] Expo Router設定
-- [ ] Zustand状態管理設定
-- [ ] APIクライアント作成（Axios）
-- [ ] expo-secure-store設定（トークン保存）
-- [ ] 共通コンポーネント作成
+#### 4.1 基盤構築 ✅
+- [x] Expo + TypeScript セットアップ
+- [x] Expo Router設定（v3）
+- [x] Zustand状態管理設定
+- [x] APIクライアント作成（Axios）
+- [x] expo-secure-store設定（トークン保存）
+- [x] 共通コンポーネント作成
+- [x] lucide-react-native アイコン導入（絵文字→SVGアイコン）
 
-#### 4.2 認証フロー (app/(auth)/)
-- [ ] 初回起動画面（分岐選択）- index.tsx
-- [ ] メールアドレス入力画面 - register.tsx
-- [ ] 認証コード入力画面（6桁）- verify-code.tsx
-- [ ] パスワード設定画面 - set-password.tsx
-- [ ] プロフィール設定画面（最小限）- profile-setup.tsx
-- [ ] ログイン画面 - login.tsx
-- [ ] パスワードリセットフロー
+#### 4.2 認証フロー (app/(auth)/) ✅
+- [x] 初回起動画面（分岐選択）- index.tsx
+- [x] メールアドレス入力画面 - register.tsx
+- [x] 認証コード入力画面（6桁）- verify-code.tsx
+- [x] パスワード設定画面 - set-password.tsx
+- [x] プロフィール設定画面（最小限）- profile-setup.tsx
+- [x] ログイン画面 - login.tsx
+- [x] パスワードリセットフロー - forgot-password.tsx
+- [x] SafeAreaView + useSafeAreaInsets 対応
 
-#### 4.3 メイン画面 (app/(tabs)/)
-- [ ] タブレイアウト - _layout.tsx
-- [ ] ホーム画面（お知らせ、次回例会）- index.tsx
+#### 4.3 メイン画面 (app/(tabs)/) ✅
+- [x] タブレイアウト - _layout.tsx（Lucide SVGアイコン）
+- [x] ホーム画面（お知らせ、次回例会）- index.tsx
 
-#### 4.4 会員名簿
-- [ ] 会員一覧画面 - members.tsx
-- [ ] 会員詳細画面 - member/[id].tsx
-- [ ] 検索・フィルタ機能
-- [ ] 50音順インデックス
+#### 4.4 会員名簿 ✅
+- [x] 会員一覧画面 - members.tsx
+- [x] 会員詳細モーダル
+- [x] 検索・フィルタ機能
+- [x] 50音順インデックス
+- [ ] 会員詳細画面 - member/[id].tsx（別画面として）
 
-#### 4.5 イベント
-- [ ] イベント一覧画面 - events.tsx
-- [ ] イベント詳細画面 - event/[id].tsx
-- [ ] 出欠回答機能
+#### 4.5 イベント ✅
+- [x] イベント一覧画面 - events.tsx
+- [x] イベント詳細・出欠回答機能
+- [ ] イベント詳細画面 - event/[id].tsx（別画面として）
 
-#### 4.6 お知らせ
-- [ ] お知らせ一覧（ホーム画面内）
-- [ ] お知らせ詳細画面 - notification/[id].tsx
+#### 4.6 お知らせ ✅
+- [x] お知らせ一覧画面 - notifications.tsx
+- [x] お知らせ詳細モーダル
+- [ ] お知らせ詳細画面 - notification/[id].tsx（別画面として）
 
-#### 4.7 マイページ
-- [ ] マイページ画面 - mypage.tsx
-- [ ] プロフィール編集画面
-- [ ] プライバシー設定画面
-- [ ] パスワード変更画面
-- [ ] ログアウト機能
+#### 4.7 マイページ ✅
+- [x] マイページ画面 - mypage.tsx
+- [x] プロフィール編集モーダル
+- [x] パスワード変更モーダル
+- [x] ログアウト機能
+- [ ] プライバシー設定画面（UI配置済み、機能未実装）
+- [ ] 通知設定画面（UI配置済み、機能未実装）
 
 ---
 
@@ -236,7 +241,7 @@
 ### 現在の状況
 | Phase | 進捗 | 備考 |
 |-------|------|------|
-| Phase 1 | 🔄 約90% | Backend完了、Club Admin完了、Mobile未着手 |
+| Phase 1 | ✅ 約98% | Backend完了、Club Admin完了、Mobile基本機能完了 |
 | Phase 2 | ⬜ | Phase 1完了後 |
 | Phase 3 | ⬜ | Phase 2完了後 |
 
@@ -247,10 +252,16 @@
 - ✅ Club Admin イベント管理（作成・編集・出欠一覧）
 - ✅ Club Admin お知らせ管理（作成・編集・プレビュー）
 - ✅ Club Admin 設定（クラブ情報・管理者管理）
+- ✅ Mobile App 基盤構築（Expo Router v3、Zustand、Axios、lucide-react-native）
+- ✅ Mobile App 認証フロー（登録・ログイン・パスワード設定・リセット）
+- ✅ Mobile App タブ画面（ホーム・会員名簿・イベント・お知らせ・マイページ）
+- ✅ Mobile App UI改善（絵文字→SVGアイコン、SafeAreaView対応）
 
 ### 次のステップ
-1. Mobile App 基盤構築・認証フロー
-2. Mobile App メイン画面（ホーム・会員名簿・イベント・マイページ）
+1. Mobile App 詳細画面（会員詳細・イベント詳細・お知らせ詳細を別画面として実装）
+2. Mobile App 設定機能（プライバシー設定・通知設定の実装）
+3. ファイルアップロード機能（アバター画像）
+4. CSV一括登録・エクスポート機能
 
 ---
 
@@ -266,6 +277,10 @@ pnpm dev
 # 個別起動
 pnpm --filter backend dev      # API: http://localhost:3001
 pnpm --filter club-admin dev   # Club Admin: http://localhost:3000
+pnpm --filter mobile dev       # Mobile: Expo (iOS/Android)
+
+# Mobile iOS起動
+cd apps/mobile && npx expo start --ios --clear
 ```
 
 ### テストアカウント
