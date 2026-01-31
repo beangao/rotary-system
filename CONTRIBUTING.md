@@ -6,6 +6,14 @@
 - ファイル名: `kebab-case`
 - 日本語コメント推奨
 
+### UIアイコン
+
+- **絵文字（Emoji）をUIアイコンとして使用しない**
+- 代わりにSVGアイコンライブラリを使用すること
+  - Mobile (React Native): `lucide-react-native`
+  - Web (Next.js): `lucide-react` または Heroicons
+- 例: `📝` → `<FileText />`, `🔔` → `<Bell />`, `👁️` → `<Eye />`
+
 ### API設計
 
 - RESTful API
