@@ -25,7 +25,7 @@ const router = Router();
 // 会員向け認証
 router.post('/send-code', validate(sendCodeSchema), sendCode);
 router.post('/verify-code', validate(verifyCodeSchema), verifyCode);
-router.post('/set-password', authenticateJWT, validate(setPasswordSchema), setPassword);
+router.post('/set-password', validate(setPasswordSchema), setPassword);
 router.post('/login', validate(loginSchema), memberLogin);
 
 // パスワードリセット

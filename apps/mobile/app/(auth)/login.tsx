@@ -66,7 +66,7 @@ export default function LoginScreen() {
 
   return (
     <LinearGradient colors={['#1e3a8a', '#1d4ed8']} style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={[]}>
         {/* ヘッダー */}
         <View style={styles.header}>
           <View style={styles.logoCircle}>
@@ -160,7 +160,7 @@ export default function LoginScreen() {
                     onPress={() => setShowPassword(!showPassword)}
                     disabled={isLoading}
                   >
-                    <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+                    {showPassword ? <EyeOff size={20} color="#6b7280" strokeWidth={2} /> : <Eye size={20} color="#6b7280" strokeWidth={2} />}
                   </TouchableOpacity>
                 </View>
                 {errors.password && (
@@ -419,5 +419,9 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: '#6b7280',
     fontSize: 16,
+  },
+  backButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

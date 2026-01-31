@@ -76,7 +76,7 @@ export default function SetPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* ヘッダー */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -147,7 +147,7 @@ export default function SetPasswordScreen() {
                 onPress={() => setShowPassword(!showPassword)}
                 disabled={isLoading}
               >
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+                {showPassword ? <EyeOff size={20} color="#6b7280" strokeWidth={2} /> : <Eye size={20} color="#6b7280" strokeWidth={2} />}
               </TouchableOpacity>
             </View>
             {errors.password && (
@@ -206,7 +206,7 @@ export default function SetPasswordScreen() {
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 disabled={isLoading}
               >
-                <Text style={styles.eyeIcon}>{showConfirmPassword ? '🙈' : '👁️'}</Text>
+                {showConfirmPassword ? <EyeOff size={20} color="#6b7280" strokeWidth={2} /> : <Eye size={20} color="#6b7280" strokeWidth={2} />}
               </TouchableOpacity>
             </View>
             {errors.confirmPassword && (

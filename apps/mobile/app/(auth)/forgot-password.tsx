@@ -229,6 +229,10 @@ const styles = StyleSheet.create({
     color: '#1e3a8a',
     fontWeight: '600',
   },
+  linkContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   // 成功画面
   successContent: {
     flex: 1,

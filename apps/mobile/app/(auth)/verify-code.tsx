@@ -108,7 +108,7 @@ export default function VerifyCodeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* ヘッダー */}
       <View style={styles.header}>
         <TouchableOpacity
