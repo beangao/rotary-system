@@ -20,6 +20,7 @@ interface AuthState {
 
   // 認証
   loadToken: () => Promise<void>;
+  checkAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
@@ -60,6 +61,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Token load error:', error);
     }
     set({ isLoading: false, isAuthenticated: false, user: null });
+  },
+
+  // 認証チェック（loadTokenのエイリアス）
+  checkAuth: async () => {
+    return get().loadToken();
   },
 
   // ログイン

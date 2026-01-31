@@ -1,20 +1,8 @@
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useAuthStore } from '../src/stores/auth.store';
 
 export default function RootLayout() {
-  const { loadToken, isLoading } = useAuthStore();
-
-  useEffect(() => {
-    loadToken();
-  }, []);
-
-  if (isLoading) {
-    return null; // またはスプラッシュスクリーン
-  }
-
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
