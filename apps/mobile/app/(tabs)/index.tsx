@@ -1,19 +1,100 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useCallback } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/stores/auth.store';
+import { api } from '../../src/services/api';
+import { Event, Notification } from '../../src/types';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [nextEvent, setNextEvent] = useState<Event | null>(null);
+  const [latestNotification, setLatestNotification] = useState<Notification | null>(null);
+  const [attendanceStatus, setAttendanceStatus] = useState<string | null>(null);
+  const [isSubmittingAttendance, setIsSubmittingAttendance] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      // イベントを取得
+      const eventsResponse = await api.getEvents({ status: 'published' });
+      if (eventsResponse.success && eventsResponse.data?.events?.length > 0) {
+        const upcomingEvent = eventsResponse.data.events[0];
+        setNextEvent(upcomingEvent);
+        setAttendanceStatus(upcomingEvent.myAttendance?.status || null);
+      }
+
+      // お知らせを取得
+      const notificationsResponse = await api.getNotifications({ status: 'published' });
+      if (notificationsResponse.success && notificationsResponse.data?.notifications?.length > 0) {
+        setLatestNotification(notificationsResponse.data.notifications[0]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // TODO: データの再取得
-    setTimeout(() => setRefreshing(false), 1000);
+    fetchData();
   }, []);
+
+  const handleAttendance = async (status: string) => {
+    if (!nextEvent || isSubmittingAttendance) return;
+
+    setIsSubmittingAttendance(true);
+    try {
+      const response = await api.submitAttendance(nextEvent.id, status);
+      if (response.success) {
+        setAttendanceStatus(status);
+      }
+    } catch (error) {
+      console.error('Failed to submit attendance:', error);
+    } finally {
+      setIsSubmittingAttendance(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const weekday = weekdays[date.getDay()];
+    return { year, month, day, weekday };
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1e3a8a" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -23,78 +104,218 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* ウェルカムカード */}
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>ようこそ</Text>
-          <Text style={styles.userName}>
-            {user?.lastName} {user?.firstName} 様
-          </Text>
+        {/* ヘッダー */}
+        <LinearGradient
+          colors={['#1e3a8a', '#1d4ed8']}
+          style={styles.header}
+        >
           <Text style={styles.clubName}>{user?.club?.name || 'ロータリークラブ'}</Text>
-        </View>
+          <Text style={styles.greeting}>こんにちは、{user?.lastName} {user?.firstName}様</Text>
+        </LinearGradient>
 
-        {/* クイックアクション */}
+        {/* 事務局からのお知らせ */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>クイックアクセス</Text>
-          <View style={styles.quickActions}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>事務局からのお知らせ</Text>
             <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/members')}
-            >
-              <Text style={styles.actionIcon}>👥</Text>
-              <Text style={styles.actionText}>会員名簿</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/events')}
-            >
-              <Text style={styles.actionIcon}>📅</Text>
-              <Text style={styles.actionText}>イベント</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionCard}
               onPress={() => router.push('/(tabs)/notifications')}
+              style={styles.seeAllButton}
             >
-              <Text style={styles.actionIcon}>🔔</Text>
-              <Text style={styles.actionText}>お知らせ</Text>
+              <Text style={styles.seeAllText}>一覧を見る →</Text>
             </TouchableOpacity>
           </View>
+
+          {latestNotification ? (
+            <TouchableOpacity
+              style={styles.notificationCard}
+              onPress={() => router.push('/(tabs)/notifications')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.notificationIconContainer}>
+                <Text style={styles.notificationIcon}>🔔</Text>
+              </View>
+              <View style={styles.notificationContent}>
+                <Text style={styles.notificationTitle}>{latestNotification.title}</Text>
+                <Text style={styles.notificationPreview} numberOfLines={2}>
+                  {latestNotification.content}
+                </Text>
+                <Text style={styles.notificationDate}>
+                  {new Date(latestNotification.publishedAt || latestNotification.createdAt).toLocaleDateString('ja-JP')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.emptyNotification}>
+              <Text style={styles.emptyText}>新しいお知らせはありません</Text>
+            </View>
+          )}
         </View>
 
         {/* 次回例会 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>次回例会</Text>
-          <View style={styles.eventCard}>
-            <View style={styles.eventDate}>
-              <Text style={styles.eventMonth}>2月</Text>
-              <Text style={styles.eventDay}>5</Text>
-              <Text style={styles.eventWeekday}>水</Text>
-            </View>
-            <View style={styles.eventDetails}>
-              <Text style={styles.eventTitle}>第1234回例会</Text>
-              <Text style={styles.eventInfo}>12:00 〜 13:30</Text>
-              <Text style={styles.eventInfo}>ホテルニューオータニ 鳳凰の間</Text>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionIcon}>📅</Text>
+              <Text style={styles.sectionTitle}>次回例会</Text>
             </View>
           </View>
+
+          {nextEvent ? (
+            <View style={styles.eventCard}>
+              {/* イベント詳細 */}
+              <LinearGradient
+                colors={['#1e3a8a', '#1d4ed8']}
+                style={styles.eventHeader}
+              >
+                <View style={styles.eventDateRow}>
+                  <Text style={styles.eventIcon}>📅</Text>
+                  <Text style={styles.eventDateTime}>
+                    {formatDate(nextEvent.startAt).year}年
+                    {formatDate(nextEvent.startAt).month}月
+                    {formatDate(nextEvent.startAt).day}日
+                    （{formatDate(nextEvent.startAt).weekday}）
+                    {formatTime(nextEvent.startAt)}
+                    {nextEvent.endAt && `〜${formatTime(nextEvent.endAt)}`}
+                  </Text>
+                </View>
+                {nextEvent.venue && (
+                  <View style={styles.eventDateRow}>
+                    <Text style={styles.eventIcon}>📍</Text>
+                    <Text style={styles.eventVenue}>{nextEvent.venue}</Text>
+                  </View>
+                )}
+                {nextEvent.responseDeadline && (
+                  <View style={styles.deadlineBadge}>
+                    <Text style={styles.deadlineText}>
+                      回答期限：{new Date(nextEvent.responseDeadline).toLocaleDateString('ja-JP')}
+                    </Text>
+                  </View>
+                )}
+              </LinearGradient>
+
+              {/* 卓話情報（あれば） */}
+              {nextEvent.description && (
+                <View style={styles.talkSection}>
+                  <View style={styles.talkRow}>
+                    <Text style={styles.talkIcon}>💬</Text>
+                    <View style={styles.talkContent}>
+                      <Text style={styles.talkLabel}>卓話・内容</Text>
+                      <Text style={styles.talkDescription}>{nextEvent.description}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* 出欠回答エリア */}
+              <View style={styles.attendanceSection}>
+                <Text style={styles.attendanceTitle}>出欠のご回答</Text>
+
+                {attendanceStatus ? (
+                  <View style={styles.answeredContainer}>
+                    <View style={styles.answeredBadge}>
+                      <Text style={styles.answeredIcon}>✓</Text>
+                      <Text style={styles.answeredText}>
+                        回答済み: {attendanceStatus === 'attending' ? '出席' : attendanceStatus === 'absent' ? '欠席' : '未定'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setAttendanceStatus(null)}
+                      disabled={isSubmittingAttendance}
+                    >
+                      <Text style={styles.changeButton}>回答を変更する</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.thankYouText}>ご回答ありがとうございます</Text>
+                  </View>
+                ) : (
+                  <View style={styles.attendanceButtons}>
+                    <TouchableOpacity
+                      style={[styles.attendanceButton, styles.attendButton]}
+                      onPress={() => handleAttendance('attending')}
+                      disabled={isSubmittingAttendance}
+                      activeOpacity={0.8}
+                    >
+                      {isSubmittingAttendance ? (
+                        <ActivityIndicator color="#ffffff" size="small" />
+                      ) : (
+                        <Text style={styles.attendButtonText}>出席</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.attendanceButton, styles.absentButton]}
+                      onPress={() => handleAttendance('absent')}
+                      disabled={isSubmittingAttendance}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.absentButtonText}>欠席</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.attendanceButton, styles.undecidedButton]}
+                      onPress={() => handleAttendance('undecided')}
+                      disabled={isSubmittingAttendance}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.undecidedButtonText}>未定</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyEvent}>
+              <Text style={styles.emptyIcon}>📅</Text>
+              <Text style={styles.emptyText}>予定されている例会はありません</Text>
+            </View>
+          )}
         </View>
 
-        {/* お知らせ */}
+        {/* クイックアクセス */}
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>クイックアクセス</Text>
+
+          <TouchableOpacity
+            style={styles.quickAccessButton}
+            onPress={() => router.push('/(tabs)/members')}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#1e3a8a', '#1d4ed8']}
+              style={styles.quickAccessGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <View style={styles.quickAccessContent}>
+                <Text style={styles.quickAccessIcon}>👥</Text>
+                <Text style={styles.quickAccessText}>会員名簿を開く</Text>
+              </View>
+              <Text style={styles.quickAccessChevron}>→</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* 今後のスケジュール */}
+        <View style={[styles.section, styles.lastSection]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>最新のお知らせ</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/notifications')}>
-              <Text style={styles.seeAll}>すべて見る →</Text>
+            <Text style={styles.sectionTitle}>今後のスケジュール</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/events')}
+              style={styles.seeAllButton}
+            >
+              <Text style={styles.seeAllText}>一覧を見る →</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.notificationList}>
-            <TouchableOpacity style={styles.notificationItem}>
-              <Text style={styles.notificationCategory}>重要</Text>
-              <Text style={styles.notificationTitle}>2月度例会のお知らせ</Text>
-              <Text style={styles.notificationDate}>2025/01/30</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.notificationItem}>
-              <Text style={styles.notificationCategory}>一般</Text>
-              <Text style={styles.notificationTitle}>会員名簿の更新について</Text>
-              <Text style={styles.notificationDate}>2025/01/28</Text>
+
+          <View style={styles.scheduleCard}>
+            <TouchableOpacity
+              style={styles.scheduleItem}
+              onPress={() => router.push('/(tabs)/events')}
+            >
+              <View style={styles.scheduleItemContent}>
+                <Text style={styles.scheduleItemTitle}>イベント一覧</Text>
+                <Text style={styles.scheduleItemSubtitle}>すべてのイベントを確認</Text>
+              </View>
+              <Text style={styles.scheduleChevron}>→</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -108,33 +329,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f3f4f6',
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
+  },
   scrollView: {
     flex: 1,
   },
-  welcomeCard: {
-    backgroundColor: '#1e3a8a',
-    margin: 16,
-    padding: 24,
-    borderRadius: 16,
-  },
-  welcomeText: {
-    color: '#93c5fd',
-    fontSize: 14,
-  },
-  userName: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 4,
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
   },
   clubName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  greeting: {
+    fontSize: 18,
     color: '#93c5fd',
-    fontSize: 14,
-    marginTop: 8,
   },
   section: {
-    marginHorizontal: 16,
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  lastSection: {
+    paddingBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -142,114 +365,308 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
   sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  seeAllButton: {
+    padding: 4,
+  },
+  seeAllText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e3a8a',
+  },
+  // Notification
+  notificationCard: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 2,
+    borderColor: '#fbbf24',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+  },
+  notificationIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fbbf24',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  notificationIcon: {
+    fontSize: 20,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#92400e',
+    marginBottom: 4,
+  },
+  notificationPreview: {
+    fontSize: 16,
+    color: '#78350f',
+    lineHeight: 24,
+    marginBottom: 4,
+  },
+  notificationDate: {
+    fontSize: 14,
+    color: '#a16207',
+  },
+  emptyNotification: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#9ca3af',
+  },
+  emptyIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  emptyEvent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 40,
+    alignItems: 'center',
+  },
+  // Event Card
+  eventCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#1e3a8a',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  eventHeader: {
+    padding: 16,
+  },
+  eventDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  eventIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  eventDateTime: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  eventVenue: {
+    fontSize: 16,
+    color: '#ffffff',
+  },
+  deadlineBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  deadlineText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  talkSection: {
+    backgroundColor: '#dbeafe',
+    padding: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: '#93c5fd',
+  },
+  talkRow: {
+    flexDirection: 'row',
+  },
+  talkIcon: {
+    fontSize: 18,
+    marginRight: 8,
+    marginTop: 2,
+  },
+  talkContent: {
+    flex: 1,
+  },
+  talkLabel: {
+    fontSize: 14,
+    color: '#1e40af',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  talkDescription: {
+    fontSize: 16,
+    color: '#1e3a8a',
+    lineHeight: 24,
+  },
+  // Attendance
+  attendanceSection: {
+    padding: 20,
+  },
+  attendanceTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  seeAll: {
-    color: '#1e3a8a',
-    fontSize: 14,
-  },
-  quickActions: {
-    flexDirection: 'row',
+  attendanceButtons: {
     gap: 12,
   },
-  actionCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 16,
+  attendanceButton: {
+    paddingVertical: 18,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    justifyContent: 'center',
+    borderWidth: 2,
   },
-  actionIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  attendButton: {
+    backgroundColor: '#16a34a',
+    borderColor: '#15803d',
   },
-  actionText: {
-    fontSize: 12,
-    color: '#374151',
-    fontWeight: '600',
-  },
-  eventCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  eventDate: {
-    backgroundColor: '#1e3a8a',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  eventMonth: {
-    color: '#93c5fd',
-    fontSize: 12,
-  },
-  eventDay: {
-    color: '#ffffff',
-    fontSize: 28,
+  attendButtonText: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#ffffff',
   },
-  eventWeekday: {
-    color: '#93c5fd',
-    fontSize: 12,
+  absentButton: {
+    backgroundColor: '#ffffff',
+    borderColor: '#d1d5db',
   },
-  eventDetails: {
-    flex: 1,
-  },
-  eventTitle: {
-    fontSize: 16,
+  absentButtonText: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 4,
   },
-  eventInfo: {
+  undecidedButton: {
+    backgroundColor: '#ffffff',
+    borderColor: '#d1d5db',
+  },
+  undecidedButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  answeredContainer: {
+    backgroundColor: '#dbeafe',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  answeredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  answeredIcon: {
+    fontSize: 20,
+    color: '#1e3a8a',
+    marginRight: 8,
+  },
+  answeredText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e3a8a',
+  },
+  changeButton: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e3a8a',
+    textDecorationLine: 'underline',
+    marginBottom: 8,
+  },
+  thankYouText: {
     fontSize: 14,
     color: '#6b7280',
   },
-  notificationList: {
-    backgroundColor: '#ffffff',
+  // Quick Access
+  quickAccessButton: {
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  quickAccessGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+  },
+  quickAccessContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quickAccessIcon: {
+    fontSize: 28,
+    marginRight: 16,
+  },
+  quickAccessText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  quickAccessChevron: {
+    fontSize: 24,
+    color: '#ffffff',
+  },
+  // Schedule
+  scheduleCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
-  notificationItem: {
+  scheduleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  notificationCategory: {
-    fontSize: 11,
-    color: '#1e3a8a',
+  scheduleItemContent: {
+    flex: 1,
+  },
+  scheduleItemTitle: {
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
-  },
-  notificationTitle: {
-    fontSize: 14,
     color: '#1f2937',
-    marginBottom: 4,
   },
-  notificationDate: {
-    fontSize: 12,
+  scheduleItemSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  scheduleChevron: {
+    fontSize: 18,
     color: '#9ca3af',
   },
 });

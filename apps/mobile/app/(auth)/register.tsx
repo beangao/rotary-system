@@ -9,45 +9,57 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../src/stores/auth.store';
 import { api } from '../../src/services/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { setTempEmail, setError, error } = useAuthStore();
-
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSendCode = async () => {
+    setError(null);
+
     if (!email) {
       setError('メールアドレスを入力してください');
       return;
     }
 
-    // メールアドレスの形式チェック
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!validateEmail(email)) {
       setError('正しいメールアドレスを入力してください');
       return;
     }
 
+    if (!agreedToTerms) {
+      setError('利用規約に同意してください');
+      return;
+    }
+
     setIsLoading(true);
-    setError(null);
 
     try {
       const response = await api.sendVerificationCode(email);
       if (response.success) {
-        setTempEmail(email);
-        router.push('/(auth)/verify-code');
+        router.push({
+          pathname: '/(auth)/verify-code',
+          params: { email, mode: 'register' },
+        });
       } else {
-        setError(response.error || '認証コードの送信に失敗しました');
+        setError(response.error || 'メールの送信に失敗しました');
       }
     } catch (err: any) {
-      const message = err.response?.data?.error || '認証コードの送信に失敗しました';
+      const message = err.response?.data?.error || 'メールの送信に失敗しました';
       setError(message);
     } finally {
       setIsLoading(false);
@@ -55,80 +67,179 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
+        {/* ヘッダー */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            disabled={isLoading}
+          >
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>新規登録</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.content}>
-            {/* 説明 */}
-            <View style={styles.header}>
-              <Text style={styles.title}>メールアドレス入力</Text>
-              <Text style={styles.description}>
-                招待メールに記載されたメールアドレスを入力してください。
-                認証コードをお送りします。
+          {/* 説明セクション */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoIconContainer}>
+              <Text style={styles.infoIcon}>✉️</Text>
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>招待メールを確認</Text>
+              <Text style={styles.infoDescription}>
+                事務局から届いた招待メールに記載されているメールアドレスを入力してください。
               </Text>
-            </View>
-
-            {/* 注意書き */}
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
-                📧 事務局から招待メールを受け取っていない場合は、
-                事務局にお問い合わせください。
-              </Text>
-            </View>
-
-            {/* エラー表示 */}
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
-            {/* フォーム */}
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>メールアドレス</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="example@email.com"
-                  placeholderTextColor="#9ca3af"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  autoFocus
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[styles.button, isLoading && styles.buttonDisabled]}
-                onPress={handleSendCode}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#1e3a8a" />
-                ) : (
-                  <Text style={styles.buttonText}>認証コードを送信</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* ログインリンク */}
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>既にアカウントをお持ちの方</Text>
-              <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                <Text style={styles.linkText}>ログインはこちら</Text>
-              </TouchableOpacity>
             </View>
           </View>
+
+          {/* エラー表示 */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          {/* メールアドレス入力 */}
+          <View style={styles.inputSection}>
+            <View style={styles.inputCard}>
+              <View style={styles.labelContainer}>
+                <Text style={styles.labelIcon}>✉️</Text>
+                <Text style={styles.label}>メールアドレス</Text>
+              </View>
+              <TextInput
+                style={[
+                  styles.input,
+                  error && styles.inputError,
+                  isLoading && styles.inputDisabled,
+                ]}
+                placeholder="例：tanaka@example.com"
+                placeholderTextColor="#9ca3af"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (error) setError(null);
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* 利用規約同意 */}
+            <TouchableOpacity
+              style={styles.termsContainer}
+              onPress={() => setAgreedToTerms(!agreedToTerms)}
+              disabled={isLoading}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>
+                  <TouchableOpacity onPress={() => setShowTermsModal(true)}>
+                    <Text style={styles.termsLink}>利用規約</Text>
+                  </TouchableOpacity>
+                  に同意する
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* 注意事項 */}
+          <View style={styles.noticeCard}>
+            <Text style={styles.noticeTitle}>📌 ご注意</Text>
+            <Text style={styles.noticeText}>
+              • 招待メールを受け取っていない方は登録できません{'\n'}
+              • メールアドレスは事務局に登録されているものを使用してください
+            </Text>
+          </View>
         </ScrollView>
+
+        {/* フッター */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+            onPress={handleSendCode}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="#1e3a8a" size="small" />
+                <Text style={styles.submitButtonText}>送信中...</Text>
+              </View>
+            ) : (
+              <View style={styles.buttonContent}>
+                <Text style={styles.submitButtonText}>認証コードを送信</Text>
+                <Text style={styles.buttonChevron}>→</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
+
+      {/* 利用規約モーダル */}
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTermsModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>利用規約</Text>
+          </View>
+          <ScrollView style={styles.modalContent}>
+            <Text style={styles.termsTitle}>第1条（目的）</Text>
+            <Text style={styles.termsBody}>
+              本規約は、ロータリークラブ（以下「当クラブ」といいます）が提供するモバイルアプリケーション（以下「本アプリ」といいます）の利用に関する条件を定めるものです。
+            </Text>
+
+            <Text style={styles.termsTitle}>第2条（利用資格）</Text>
+            <Text style={styles.termsBody}>
+              本アプリは、当クラブの会員のみが利用できます。会員資格を喪失した場合、本アプリの利用資格も同時に失われます。
+            </Text>
+
+            <Text style={styles.termsTitle}>第3条（アカウント管理）</Text>
+            <Text style={styles.termsBody}>
+              会員は、登録情報を正確かつ最新の状態に保ち、アカウント情報を適切に管理する責任を負います。
+            </Text>
+
+            <Text style={styles.termsTitle}>第4条（禁止事項）</Text>
+            <Text style={styles.termsBody}>
+              会員は、法令または公序良俗に違反する行為、他の会員の権利を侵害する行為、本アプリの運営を妨害する行為を行ってはなりません。
+            </Text>
+
+            <Text style={styles.termsTitle}>第5条（個人情報の取扱い）</Text>
+            <Text style={styles.termsBody}>
+              当クラブは、会員の個人情報を、別途定める個人情報保護方針に従い、適切に取り扱います。
+            </Text>
+          </ScrollView>
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowTermsModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalButtonText}>閉じる</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -141,94 +252,279 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-  },
   header: {
-    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  title: {
+  backButton: {
+    padding: 8,
+  },
+  backButtonText: {
     fontSize: 24,
+    color: '#374151',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#1e3a8a',
-    marginBottom: 12,
-  },
-  description: {
-    fontSize: 16,
-    color: '#6b7280',
-    lineHeight: 24,
-  },
-  infoBox: {
-    backgroundColor: '#dbeafe',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  infoText: {
-    color: '#1e40af',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  errorContainer: {
-    backgroundColor: '#fee2e2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#dc2626',
+    color: '#1f2937',
     textAlign: 'center',
   },
-  form: {
-    gap: 16,
+  headerSpacer: {
+    width: 40,
   },
-  inputGroup: {
-    gap: 8,
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  infoCard: {
+    backgroundColor: '#dbeafe',
+    borderWidth: 1,
+    borderColor: '#93c5fd',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  infoIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#1e3a8a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  infoIcon: {
+    fontSize: 24,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e3a8a',
+    marginBottom: 8,
+  },
+  infoDescription: {
+    fontSize: 16,
+    color: '#1e40af',
+    lineHeight: 24,
+  },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 2,
+    borderColor: '#fca5a5',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  errorIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  errorText: {
+    flex: 1,
+    color: '#991b1b',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  inputSection: {
+    marginBottom: 20,
+  },
+  inputCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 16,
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  labelIcon: {
+    fontSize: 20,
+    marginRight: 8,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
   },
   input: {
     backgroundColor: '#ffffff',
     borderWidth: 2,
-    borderColor: '#e5e7eb',
+    borderColor: '#d1d5db',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
+    paddingVertical: 16,
+    fontSize: 18,
     color: '#111827',
   },
-  button: {
-    backgroundColor: '#fbbf24',
+  inputError: {
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  inputDisabled: {
+    opacity: 0.5,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#1e3a8a',
+    borderColor: '#1e3a8a',
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  termsTextContainer: {
+    flex: 1,
+  },
+  termsText: {
+    fontSize: 16,
+    color: '#374151',
+  },
+  termsLink: {
+    color: '#1e3a8a',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+  noticeCard: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    borderRadius: 16,
+    padding: 16,
+  },
+  noticeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#92400e',
+    marginBottom: 8,
+  },
+  noticeText: {
+    fontSize: 14,
+    color: '#78350f',
+    lineHeight: 22,
+  },
+  footer: {
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    padding: 16,
+  },
+  submitButton: {
+    backgroundColor: '#1e3a8a',
+    paddingVertical: 18,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitButtonText: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  buttonChevron: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  modalHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  termsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  termsBody: {
+    fontSize: 16,
+    color: '#4b5563',
+    lineHeight: 26,
+    marginBottom: 16,
+  },
+  modalFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    padding: 16,
+  },
+  modalButton: {
+    backgroundColor: '#1e3a8a',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 8,
   },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#1e3a8a',
+  modalButtonText: {
+    color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  footer: {
-    marginTop: 32,
-    alignItems: 'center',
-    gap: 8,
-  },
-  footerText: {
-    color: '#6b7280',
-  },
-  linkText: {
-    color: '#1e3a8a',
-    fontWeight: '600',
   },
 });

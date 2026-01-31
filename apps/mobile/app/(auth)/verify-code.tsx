@@ -5,199 +5,193 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   ActivityIndicator,
+  NativeSyntheticEvent,
+  TextInputKeyPressEventData,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../src/stores/auth.store';
 import { api } from '../../src/services/api';
 
 export default function VerifyCodeScreen() {
   const router = useRouter();
-  const { tempEmail, setTempCode, setError, error } = useAuthStore();
-
+  const { email, mode } = useLocalSearchParams<{ email: string; mode: string }>();
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [isLoading, setIsLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const inputRefs = useRef<TextInput[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
-    // クールダウンタイマー
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
+    // 最初の入力欄にフォーカス
+    setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 100);
+  }, []);
+
+  const handleChange = (index: number, value: string) => {
+    // 数字のみ許可
+    if (!/^\d*$/.test(value)) return;
+
+    const newCode = [...code];
+    newCode[index] = value.slice(-1); // 最後の1文字のみ
+    setCode(newCode);
+    setError(null);
+
+    // 次の入力欄に自動フォーカス
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
-  }, [resendCooldown]);
 
-  const handleCodeChange = (index: number, value: string) => {
-    if (value.length > 1) {
-      // ペーストされた場合
-      const digits = value.replace(/\D/g, '').slice(0, 6).split('');
-      const newCode = [...code];
-      digits.forEach((digit, i) => {
-        if (i < 6) newCode[i] = digit;
-      });
-      setCode(newCode);
-      if (digits.length >= 6) {
-        inputRefs.current[5]?.focus();
-      } else {
-        inputRefs.current[digits.length]?.focus();
-      }
-    } else {
-      const newCode = [...code];
-      newCode[index] = value;
-      setCode(newCode);
-
-      // 次の入力欄にフォーカス
-      if (value && index < 5) {
-        inputRefs.current[index + 1]?.focus();
-      }
+    // 6桁すべて入力されたら自動照合
+    if (newCode.every((digit) => digit !== '') && index === 5) {
+      verifyCode(newCode.join(''));
     }
   };
 
-  const handleKeyPress = (index: number, key: string) => {
-    if (key === 'Backspace' && !code[index] && index > 0) {
+  const handleKeyPress = (
+    index: number,
+    e: NativeSyntheticEvent<TextInputKeyPressEventData>
+  ) => {
+    // Backspaceで前の入力欄に戻る
+    if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
-  const handleVerify = async () => {
-    const codeString = code.join('');
-    if (codeString.length !== 6) {
-      setError('6桁の認証コードを入力してください');
-      return;
-    }
-
-    if (!tempEmail) {
-      setError('メールアドレスが設定されていません');
-      router.replace('/(auth)/register');
-      return;
-    }
-
-    setIsLoading(true);
+  const verifyCode = async (codeString: string) => {
+    setIsVerifying(true);
     setError(null);
 
     try {
-      const response = await api.verifyCode(tempEmail, codeString);
+      const response = await api.verifyCode(email, codeString);
       if (response.success) {
-        setTempCode(codeString);
-        router.push('/(auth)/set-password');
+        // パスワード設定画面へ遷移
+        router.push({
+          pathname: '/(auth)/set-password',
+          params: { email, code: codeString },
+        });
       } else {
-        setError(response.error || '認証コードが正しくありません');
+        setError('認証コードが正しくありません');
+        setCode(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
       }
     } catch (err: any) {
       const message = err.response?.data?.error || '認証に失敗しました';
       setError(message);
+      setCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
   };
 
   const handleResend = async () => {
-    if (!tempEmail || resendCooldown > 0) return;
+    setIsResending(true);
+    setError(null);
+    setCode(['', '', '', '', '', '']);
 
-    setIsLoading(true);
     try {
-      await api.sendVerificationCode(tempEmail);
-      setResendCooldown(60);
-      setCode(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
-    } catch (err) {
-      setError('認証コードの再送信に失敗しました');
+      const response = await api.sendVerificationCode(email);
+      if (response.success) {
+        inputRefs.current[0]?.focus();
+      } else {
+        setError(response.error || 'コードの再送信に失敗しました');
+      }
+    } catch (err: any) {
+      const message = err.response?.data?.error || 'コードの再送信に失敗しました';
+      setError(message);
     } finally {
-      setIsLoading(false);
+      setIsResending(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* ヘッダー */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          disabled={isVerifying}
         >
-          <View style={styles.content}>
-            {/* 説明 */}
-            <View style={styles.header}>
-              <Text style={styles.title}>認証コード入力</Text>
-              <Text style={styles.description}>
-                {tempEmail} に送信された{'\n'}
-                6桁の認証コードを入力してください
-              </Text>
-            </View>
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>認証コード入力</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-            {/* エラー表示 */}
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
-            {/* コード入力 */}
-            <View style={styles.codeContainer}>
-              {code.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => {
-                    if (ref) inputRefs.current[index] = ref;
-                  }}
-                  style={[
-                    styles.codeInput,
-                    digit && styles.codeInputFilled,
-                  ]}
-                  value={digit}
-                  onChangeText={(value) => handleCodeChange(index, value)}
-                  onKeyPress={({ nativeEvent }) =>
-                    handleKeyPress(index, nativeEvent.key)
-                  }
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  selectTextOnFocus
-                />
-              ))}
-            </View>
-
-            {/* ボタン */}
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
-              onPress={handleVerify}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#1e3a8a" />
-              ) : (
-                <Text style={styles.buttonText}>確認する</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* 再送信 */}
-            <View style={styles.resendContainer}>
-              <Text style={styles.resendText}>コードが届かない場合</Text>
-              <TouchableOpacity
-                onPress={handleResend}
-                disabled={resendCooldown > 0 || isLoading}
-              >
-                <Text
-                  style={[
-                    styles.resendLink,
-                    (resendCooldown > 0 || isLoading) && styles.resendLinkDisabled,
-                  ]}
-                >
-                  {resendCooldown > 0
-                    ? `再送信（${resendCooldown}秒後）`
-                    : '認証コードを再送信'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+      <View style={styles.content}>
+        {/* メールアイコンと説明 */}
+        <View style={styles.iconSection}>
+          <View style={styles.iconCircle}>
+            <Text style={styles.mailIcon}>✉️</Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <Text style={styles.title}>メールを確認してください</Text>
+          <Text style={styles.description}>
+            以下のメールアドレスに{'\n'}
+            6桁の認証コードを送信しました
+          </Text>
+          <Text style={styles.emailText}>{email}</Text>
+        </View>
+
+        {/* エラーメッセージ */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {/* 6桁入力欄 */}
+        <View style={styles.codeCard}>
+          <Text style={styles.codeLabel}>認証コード</Text>
+          <View style={styles.codeInputContainer}>
+            {code.map((digit, index) => (
+              <TextInput
+                key={index}
+                ref={(el) => (inputRefs.current[index] = el)}
+                style={[
+                  styles.codeInput,
+                  error && styles.codeInputError,
+                  digit && styles.codeInputFilled,
+                  isVerifying && styles.codeInputDisabled,
+                ]}
+                value={digit}
+                onChangeText={(text) => handleChange(index, text)}
+                onKeyPress={(e) => handleKeyPress(index, e)}
+                keyboardType="number-pad"
+                maxLength={1}
+                editable={!isVerifying}
+                selectTextOnFocus
+              />
+            ))}
+          </View>
+
+          {isVerifying && (
+            <View style={styles.verifyingContainer}>
+              <ActivityIndicator color="#1e3a8a" size="small" />
+              <Text style={styles.verifyingText}>確認中...</Text>
+            </View>
+          )}
+        </View>
+
+        {/* コード再送信 */}
+        <View style={styles.resendSection}>
+          <Text style={styles.resendLabel}>コードが届きませんか？</Text>
+          <TouchableOpacity
+            onPress={handleResend}
+            disabled={isVerifying || isResending}
+            activeOpacity={0.7}
+          >
+            {isResending ? (
+              <ActivityIndicator color="#1e3a8a" size="small" />
+            ) : (
+              <Text style={styles.resendButton}>コードを再送する</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -207,88 +201,160 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f3f4f6',
   },
-  keyboardView: {
-    flex: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  scrollContent: {
-    flexGrow: 1,
+  backButton: {
+    padding: 8,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#374151',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   content: {
     flex: 1,
     padding: 24,
   },
-  header: {
+  iconSection: {
+    alignItems: 'center',
     marginBottom: 32,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  mailIcon: {
+    fontSize: 40,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1e3a8a',
+    color: '#1f2937',
     marginBottom: 12,
-  },
-  description: {
-    fontSize: 16,
-    color: '#6b7280',
-    lineHeight: 24,
-  },
-  errorContainer: {
-    backgroundColor: '#fee2e2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#dc2626',
     textAlign: 'center',
   },
-  codeContainer: {
+  description: {
+    fontSize: 18,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 28,
+    marginBottom: 8,
+  },
+  emailText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e3a8a',
+  },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 2,
+    borderColor: '#fca5a5',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 32,
+    alignItems: 'flex-start',
+  },
+  errorIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  errorText: {
+    flex: 1,
+    color: '#991b1b',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  codeCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 24,
+  },
+  codeLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  codeInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
   },
   codeInput: {
     width: 48,
-    height: 56,
-    backgroundColor: '#ffffff',
+    height: 60,
     borderWidth: 2,
-    borderColor: '#e5e7eb',
+    borderColor: '#d1d5db',
     borderRadius: 12,
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#1e3a8a',
+    color: '#1f2937',
+    backgroundColor: '#ffffff',
+  },
+  codeInputError: {
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
   },
   codeInputFilled: {
     borderColor: '#1e3a8a',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#dbeafe',
   },
-  button: {
-    backgroundColor: '#fbbf24',
-    paddingVertical: 16,
-    borderRadius: 12,
+  codeInputDisabled: {
+    opacity: 0.5,
+  },
+  verifyingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  verifyingText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e3a8a',
+  },
+  resendSection: {
     alignItems: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.7,
+  resendLabel: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 8,
   },
-  buttonText: {
-    color: '#1e3a8a',
+  resendButton: {
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  resendContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-    gap: 8,
-  },
-  resendText: {
-    color: '#6b7280',
-  },
-  resendLink: {
     color: '#1e3a8a',
-    fontWeight: '600',
-  },
-  resendLinkDisabled: {
-    color: '#9ca3af',
   },
 });
