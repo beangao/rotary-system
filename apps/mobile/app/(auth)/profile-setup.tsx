@@ -11,12 +11,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/auth.store';
 import { api } from '../../src/services/api';
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user, setUser, setError, error } = useAuthStore();
 
   const [companyName, setCompanyName] = useState('');
@@ -65,7 +66,7 @@ export default function ProfileSetupScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
+          <View style={[styles.content, { paddingTop: insets.top + 24 }]}>
             {/* ヘッダー */}
             <View style={styles.header}>
               <Text style={styles.title}>プロフィール設定</Text>

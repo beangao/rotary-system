@@ -10,12 +10,13 @@ import {
   TextInputKeyPressEventData,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
 import { Mail, AlertTriangle, ChevronLeft } from 'lucide-react-native';
 
 export default function VerifyCodeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { email, mode } = useLocalSearchParams<{ email: string; mode: string }>();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +111,7 @@ export default function VerifyCodeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* ヘッダー */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}

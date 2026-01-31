@@ -12,12 +12,13 @@ import {
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Mail, AlertTriangle, ChevronRight, ChevronLeft, Check } from 'lucide-react-native';
 import { api } from '../../src/services/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export default function RegisterScreen() {
         style={styles.keyboardView}
       >
         {/* ヘッダー */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}

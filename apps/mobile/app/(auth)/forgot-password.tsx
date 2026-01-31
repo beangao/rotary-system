@@ -11,12 +11,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
 import { Check, ChevronLeft } from 'lucide-react-native';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export default function ForgotPasswordScreen() {
   if (success) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.successContent}>
+        <View style={[styles.successContent, { paddingTop: insets.top }]}>
           <View style={styles.successIcon}>
             <Check size={48} color="#16a34a" strokeWidth={3} />
           </View>
@@ -87,7 +88,7 @@ export default function ForgotPasswordScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.content}>
+          <View style={[styles.content, { paddingTop: insets.top + 24 }]}>
             {/* 説明 */}
             <View style={styles.header}>
               <Text style={styles.title}>パスワード再設定</Text>

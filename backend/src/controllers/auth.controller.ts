@@ -104,13 +104,24 @@ export const verifyCode = async (req: Request, res: Response, next: NextFunction
 // パスワード設定
 export const setPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { password } = req.body as SetPasswordInput;
-    const user = req.user as { id: string; clubId: string };
+    const { email, code, password } = req.body as SetPasswordInput;
+
+    // email + code で会員を特定（認証コード検証後の短時間内に呼ばれる想定）
+    const member = await prisma.member.findFirst({
+      where: {
+        email: email.toLowerCase(),
+        status: { in: ['invited', 'active'] },
+      },
+    });
+
+    if (!member) {
+      throw new AppError('会員が見つかりません', 400);
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const member = await prisma.member.update({
-      where: { id: user.id },
+    const updatedMember = await prisma.member.update({
+      where: { id: member.id },
       data: {
         password: hashedPassword,
         status: 'active',
@@ -120,28 +131,30 @@ export const setPassword = async (req: Request, res: Response, next: NextFunctio
 
     // 正式なトークン発行
     const accessToken = generateAccessToken({
-      userId: member.id,
+      userId: updatedMember.id,
       userType: 'member',
-      clubId: member.clubId,
+      clubId: updatedMember.clubId,
     });
 
     const refreshToken = generateRefreshToken({
-      userId: member.id,
+      userId: updatedMember.id,
       userType: 'member',
-      clubId: member.clubId,
+      clubId: updatedMember.clubId,
     });
 
     res.json({
       success: true,
       data: {
-        accessToken,
-        refreshToken,
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
         user: {
-          id: member.id,
-          email: member.email,
-          lastName: member.lastName,
-          firstName: member.firstName,
-          profileCompleted: member.profileCompleted,
+          id: updatedMember.id,
+          email: updatedMember.email,
+          lastName: updatedMember.lastName,
+          firstName: updatedMember.firstName,
+          profileCompleted: updatedMember.profileCompleted,
         },
       },
     });

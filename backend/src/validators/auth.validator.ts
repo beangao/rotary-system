@@ -21,6 +21,12 @@ export const verifyCodeSchema = z.object({
 
 export const setPasswordSchema = z.object({
   body: z.object({
+    email: z
+      .string({ required_error: 'メールアドレスを入力してください' })
+      .email('正しいメールアドレスを入力してください'),
+    code: z
+      .string({ required_error: '認証コードを入力してください' })
+      .length(6, '認証コードは6桁です'),
     password: z
       .string({ required_error: 'パスワードを入力してください' })
       .min(8, 'パスワードは8文字以上で入力してください')

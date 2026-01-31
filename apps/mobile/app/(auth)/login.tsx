@@ -11,13 +11,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/stores/auth.store';
 import { Mail, Lock, AlertTriangle, ChevronRight, ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +69,7 @@ export default function LoginScreen() {
     <LinearGradient colors={['#1e3a8a', '#1d4ed8']} style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={[]}>
         {/* ヘッダー */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 24 }]}>
           <View style={styles.logoCircle}>
             <Text style={styles.logoText}>R</Text>
           </View>
