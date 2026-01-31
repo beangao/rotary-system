@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Mail, AlertTriangle, ChevronRight, ChevronLeft, Check } from 'lucide-react-native';
+import { Mail, AlertTriangle, ChevronRight, ChevronLeft, Check, AlertCircle } from 'lucide-react-native';
 import { api } from '../../src/services/api';
 
 export default function RegisterScreen() {
@@ -163,7 +163,10 @@ export default function RegisterScreen() {
 
           {/* 注意事項 */}
           <View style={styles.noticeCard}>
-            <Text style={styles.noticeTitle}>📌 ご注意</Text>
+            <View style={styles.noticeTitleContainer}>
+              <AlertCircle size={18} color="#92400e" strokeWidth={2} />
+              <Text style={styles.noticeTitle}>ご注意</Text>
+            </View>
             <Text style={styles.noticeText}>
               • 招待メールを受け取っていない方は登録できません{'\n'}
               • メールアドレスは事務局に登録されているものを使用してください
@@ -429,11 +432,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
   },
+  noticeTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   noticeTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#92400e',
-    marginBottom: 8,
+    marginLeft: 8,
   },
   noticeText: {
     fontSize: 14,

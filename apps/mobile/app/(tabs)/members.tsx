@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/services/api';
 import { Member } from '../../src/types';
-import { ChevronRight, ChevronLeft, Check, Users, Search, Filter } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Check, Users, Search, Filter, X } from 'lucide-react-native';
 
 // 五十音インデックス
 const KANA_INDEX = ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'];
@@ -157,7 +157,7 @@ export default function MembersScreen() {
           />
           {searchTerm.length > 0 && (
             <TouchableOpacity onPress={() => setSearchTerm('')}>
-              <Text style={styles.clearButton}>✕</Text>
+              <X size={18} color="#6b7280" strokeWidth={2} />
             </TouchableOpacity>
           )}
         </View>
@@ -177,7 +177,10 @@ export default function MembersScreen() {
             style={styles.activeFilterBadge}
             onPress={() => setSelectedOccupation('all')}
           >
-            <Text style={styles.activeFilterText}>{selectedOccupation} ✕</Text>
+            <View style={styles.activeFilterContent}>
+              <Text style={styles.activeFilterText}>{selectedOccupation}</Text>
+              <X size={14} color="#1e3a8a" strokeWidth={2} />
+            </View>
           </TouchableOpacity>
         )}
       </View>
@@ -210,7 +213,7 @@ export default function MembersScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>絞り込み</Text>
             <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-              <Text style={styles.modalCloseButton}>✕</Text>
+              <X size={24} color="#374151" strokeWidth={2} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent}>
@@ -470,6 +473,11 @@ const styles = StyleSheet.create({
     color: '#1e3a8a',
     fontSize: 14,
     fontWeight: '600',
+  },
+  activeFilterContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   listContent: {
     paddingHorizontal: 16,

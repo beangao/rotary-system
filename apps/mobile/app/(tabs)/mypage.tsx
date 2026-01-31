@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/auth.store';
 import { api } from '../../src/services/api';
-import { Lock, Bell, Home, ChevronLeft, ChevronRight, Settings, GraduationCap, Heart, FileText } from 'lucide-react-native';
+import { Lock, Bell, Home, ChevronLeft, ChevronRight, GraduationCap, Heart, FileText, Pencil, Building, Briefcase, Mail, Users, Shield, LogOut, X, Eye, EyeOff } from 'lucide-react-native';
 
 export default function MyPageScreen() {
   const router = useRouter();
@@ -103,7 +103,7 @@ export default function MyPageScreen() {
           onPress={() => setShowEditModal(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.editProfileIcon}>✏️</Text>
+          <Pencil size={18} color="#ffffff" strokeWidth={2} style={styles.editProfileIcon} />
           <Text style={styles.editProfileText}>プロフィールを編集する</Text>
         </TouchableOpacity>
 
@@ -111,7 +111,7 @@ export default function MyPageScreen() {
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeaderLocked}>
             <View style={styles.sectionIconContainer}>
-              <Text style={styles.sectionIcon}>🏛️</Text>
+              <Building size={20} color="#ffffff" strokeWidth={2} />
             </View>
             <Text style={styles.sectionTitle}>ロータリー基本情報</Text>
             <View style={styles.lockBadge}>
@@ -139,7 +139,7 @@ export default function MyPageScreen() {
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeaderEditable}>
             <View style={[styles.sectionIconContainer, styles.editableIcon]}>
-              <Text style={styles.sectionIcon}>💼</Text>
+              <Briefcase size={20} color="#ffffff" strokeWidth={2} />
             </View>
             <Text style={styles.sectionTitle}>職業・事業所情報</Text>
             <View style={styles.editableBadge}>
@@ -158,7 +158,7 @@ export default function MyPageScreen() {
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeaderEditable}>
             <View style={[styles.sectionIconContainer, styles.editableIcon]}>
-              <Text style={styles.sectionIcon}>📧</Text>
+              <Mail size={20} color="#ffffff" strokeWidth={2} />
             </View>
             <Text style={styles.sectionTitle}>連絡先</Text>
             <View style={styles.editableBadge}>
@@ -176,7 +176,7 @@ export default function MyPageScreen() {
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeaderEditable}>
             <View style={[styles.sectionIconContainer, styles.editableIcon]}>
-              <Text style={styles.sectionIcon}>🤝</Text>
+              <Users size={20} color="#ffffff" strokeWidth={2} />
             </View>
             <Text style={styles.sectionTitle}>パーソナル・親睦</Text>
             <View style={styles.editableBadge}>
@@ -185,15 +185,15 @@ export default function MyPageScreen() {
           </View>
 
           <View style={styles.infoGrid}>
-            <InfoRowWithIcon icon="🏠" label="出身地" value={user?.hometown || '未設定'} />
-            <InfoRowWithIcon icon="🎓" label="出身校" value={user?.school || '未設定'} />
-            <InfoRowWithIcon icon="❤️" label="趣味・特技" value={user?.hobbies || '未設定'} />
+            <InfoRowWithIcon icon="home" label="出身地" value={user?.hometown || '未設定'} />
+            <InfoRowWithIcon icon="graduation" label="出身校" value={user?.school || '未設定'} />
+            <InfoRowWithIcon icon="heart" label="趣味・特技" value={user?.hobbies || '未設定'} />
           </View>
 
           {user?.bio && (
             <View style={styles.bioSection}>
               <View style={styles.bioHeader}>
-                <Text style={styles.bioIcon}>📝</Text>
+                <FileText size={16} color="#6b7280" strokeWidth={2} style={styles.bioIconStyle} />
                 <Text style={styles.bioLabel}>自己紹介</Text>
               </View>
               <Text style={styles.bioText}>{user.bio}</Text>
@@ -204,13 +204,13 @@ export default function MyPageScreen() {
         {/* 設定メニュー */}
         <View style={styles.menuCard}>
           <MenuItem
-            icon="🔒"
+            icon="lock"
             label="パスワード変更"
             onPress={() => setShowPasswordModal(true)}
           />
-          <MenuItem icon="🔔" label="通知設定" onPress={() => {}} hasBorder />
-          <MenuItem icon="🛡️" label="プライバシー設定" onPress={() => {}} hasBorder />
-          <MenuItem icon="📋" label="利用規約" onPress={() => {}} hasBorder />
+          <MenuItem icon="bell" label="通知設定" onPress={() => {}} hasBorder />
+          <MenuItem icon="shield" label="プライバシー設定" onPress={() => {}} hasBorder />
+          <MenuItem icon="file" label="利用規約" onPress={() => {}} hasBorder />
         </View>
 
         {/* ログアウトボタン */}
@@ -219,7 +219,7 @@ export default function MyPageScreen() {
           onPress={handleLogout}
           activeOpacity={0.8}
         >
-          <Text style={styles.logoutIcon}>🚪</Text>
+          <LogOut size={18} color="#dc2626" strokeWidth={2} style={styles.logoutIconStyle} />
           <Text style={styles.logoutText}>ログアウト</Text>
         </TouchableOpacity>
 
@@ -272,15 +272,22 @@ const InfoRowWithIcon = ({
   icon: string;
   label: string;
   value: string;
-}) => (
-  <View style={styles.infoRow}>
-    <View style={styles.infoLabelWithIcon}>
-      <Text style={styles.infoRowIcon}>{icon}</Text>
-      <Text style={styles.infoLabel}>{label}</Text>
+}) => {
+  const iconComponents: Record<string, React.ReactNode> = {
+    home: <Home size={16} color="#6b7280" strokeWidth={2} />,
+    graduation: <GraduationCap size={16} color="#6b7280" strokeWidth={2} />,
+    heart: <Heart size={16} color="#6b7280" strokeWidth={2} />,
+  };
+  return (
+    <View style={styles.infoRow}>
+      <View style={styles.infoLabelWithIcon}>
+        <View style={styles.infoRowIconContainer}>{iconComponents[icon]}</View>
+        <Text style={styles.infoLabel}>{label}</Text>
+      </View>
+      <Text style={styles.infoValue}>{value}</Text>
     </View>
-    <Text style={styles.infoValue}>{value}</Text>
-  </View>
-);
+  );
+};
 
 // メニューアイテムコンポーネント
 const MenuItem = ({
@@ -293,17 +300,25 @@ const MenuItem = ({
   label: string;
   onPress: () => void;
   hasBorder?: boolean;
-}) => (
-  <TouchableOpacity
-    style={[styles.menuItem, hasBorder && styles.menuItemBorder]}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <Text style={styles.menuIcon}>{icon}</Text>
-    <Text style={styles.menuLabel}>{label}</Text>
-    <Text style={styles.menuChevron}>›</Text>
-  </TouchableOpacity>
-);
+}) => {
+  const iconComponents: Record<string, React.ReactNode> = {
+    lock: <Lock size={22} color="#1f2937" strokeWidth={2} />,
+    bell: <Bell size={22} color="#1f2937" strokeWidth={2} />,
+    shield: <Shield size={22} color="#1f2937" strokeWidth={2} />,
+    file: <FileText size={22} color="#1f2937" strokeWidth={2} />,
+  };
+  return (
+    <TouchableOpacity
+      style={[styles.menuItem, hasBorder && styles.menuItemBorder]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.menuIconContainer}>{iconComponents[icon]}</View>
+      <Text style={styles.menuLabel}>{label}</Text>
+      <ChevronRight size={22} color="#9ca3af" strokeWidth={2} />
+    </TouchableOpacity>
+  );
+};
 
 // プロフィール編集モーダル
 const ProfileEditModal = ({
@@ -360,7 +375,7 @@ const ProfileEditModal = ({
           {/* ヘッダー */}
           <View style={styles.modalHeader}>
             <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-              <Text style={styles.modalCloseText}>✕</Text>
+              <X size={24} color="#374151" strokeWidth={2} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>プロフィール編集</Text>
             <TouchableOpacity
@@ -453,7 +468,7 @@ const ProfileEditModal = ({
 
             <View style={styles.editFieldCard}>
               <View style={styles.editFieldLabelRow}>
-                <Text style={styles.editFieldEmoji}>🎓</Text>
+                <GraduationCap size={20} color="#1e3a8a" strokeWidth={2} />
                 <Text style={styles.editFieldLabel}>出身校</Text>
               </View>
               <TextInput
@@ -467,7 +482,7 @@ const ProfileEditModal = ({
 
             <View style={styles.editFieldCard}>
               <View style={styles.editFieldLabelRow}>
-                <Text style={styles.editFieldEmoji}>❤️</Text>
+                <Heart size={20} color="#1e3a8a" strokeWidth={2} />
                 <Text style={styles.editFieldLabel}>趣味・特技</Text>
               </View>
               <TextInput
@@ -481,7 +496,7 @@ const ProfileEditModal = ({
 
             <View style={styles.editFieldCard}>
               <View style={styles.editFieldLabelRow}>
-                <Text style={styles.editFieldEmoji}>📝</Text>
+                <FileText size={20} color="#1e3a8a" strokeWidth={2} />
                 <Text style={styles.editFieldLabel}>自己紹介</Text>
               </View>
               <TextInput
@@ -622,9 +637,7 @@ const PasswordChangeModal = ({
                   style={styles.passwordToggle}
                   onPress={() => setShowCurrentPassword(!showCurrentPassword)}
                 >
-                  <Text style={styles.passwordToggleIcon}>
-                    {showCurrentPassword ? '🙈' : '👁️'}
-                  </Text>
+                  {showCurrentPassword ? <EyeOff size={20} color="#6b7280" strokeWidth={2} /> : <Eye size={20} color="#6b7280" strokeWidth={2} />}
                 </TouchableOpacity>
               </View>
               {errors.currentPassword && (
@@ -651,9 +664,7 @@ const PasswordChangeModal = ({
                   style={styles.passwordToggle}
                   onPress={() => setShowNewPassword(!showNewPassword)}
                 >
-                  <Text style={styles.passwordToggleIcon}>
-                    {showNewPassword ? '🙈' : '👁️'}
-                  </Text>
+                  {showNewPassword ? <EyeOff size={20} color="#6b7280" strokeWidth={2} /> : <Eye size={20} color="#6b7280" strokeWidth={2} />}
                 </TouchableOpacity>
               </View>
 
@@ -698,9 +709,7 @@ const PasswordChangeModal = ({
                   style={styles.passwordToggle}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  <Text style={styles.passwordToggleIcon}>
-                    {showConfirmPassword ? '🙈' : '👁️'}
-                  </Text>
+                  {showConfirmPassword ? <EyeOff size={20} color="#6b7280" strokeWidth={2} /> : <Eye size={20} color="#6b7280" strokeWidth={2} />}
                 </TouchableOpacity>
               </View>
               {errors.confirmPassword && (
@@ -920,6 +929,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginRight: 8,
   },
+  infoRowIconContainer: {
+    marginRight: 8,
+  },
   infoLabel: {
     fontSize: 15,
     color: '#6b7280',
@@ -943,6 +955,9 @@ const styles = StyleSheet.create({
   },
   bioIcon: {
     fontSize: 16,
+    marginRight: 8,
+  },
+  bioIconStyle: {
     marginRight: 8,
   },
   bioLabel: {
@@ -980,6 +995,9 @@ const styles = StyleSheet.create({
     fontSize: 22,
     marginRight: 14,
   },
+  menuIconContainer: {
+    marginRight: 14,
+  },
   menuLabel: {
     flex: 1,
     fontSize: 17,
@@ -1005,6 +1023,9 @@ const styles = StyleSheet.create({
   },
   logoutIcon: {
     fontSize: 18,
+    marginRight: 8,
+  },
+  logoutIconStyle: {
     marginRight: 8,
   },
   logoutText: {
