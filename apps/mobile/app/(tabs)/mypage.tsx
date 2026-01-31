@@ -316,7 +316,7 @@ const ProfileEditModal = ({
   user: any;
   onSave: (data: any) => void;
 }) => {
-  const [formData, setFormData] = useState({
+  const [profileData, setProfileData] = useState({
     classification: '',
     companyName: '',
     jobTitle: '',
@@ -330,7 +330,7 @@ const ProfileEditModal = ({
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      setProfileData({
         classification: user.classification || '',
         companyName: user.companyName || '',
         jobTitle: user.jobTitle || '',
@@ -345,7 +345,7 @@ const ProfileEditModal = ({
 
   const handleSave = async () => {
     setIsSaving(true);
-    await onSave(formData);
+    await onSave(profileData);
     setIsSaving(false);
   };
 
@@ -385,8 +385,8 @@ const ProfileEditModal = ({
               <Text style={styles.editFieldLabel}>職業分類</Text>
               <TextInput
                 style={styles.editInput}
-                value={formData.classification}
-                onChangeText={(text) => setFormData({ ...formData, classification: text })}
+                value={profileData.classification}
+                onChangeText={(text) => setProfileData({ ...profileData, classification: text })}
                 placeholder="例：IT・通信業"
                 placeholderTextColor="#9ca3af"
               />
@@ -396,8 +396,8 @@ const ProfileEditModal = ({
               <Text style={styles.editFieldLabel}>会社名・屋号</Text>
               <TextInput
                 style={styles.editInput}
-                value={formData.companyName}
-                onChangeText={(text) => setFormData({ ...formData, companyName: text })}
+                value={profileData.companyName}
+                onChangeText={(text) => setProfileData({ ...profileData, companyName: text })}
                 placeholder="例：株式会社サンプル"
                 placeholderTextColor="#9ca3af"
               />
@@ -407,8 +407,8 @@ const ProfileEditModal = ({
               <Text style={styles.editFieldLabel}>役職</Text>
               <TextInput
                 style={styles.editInput}
-                value={formData.jobTitle}
-                onChangeText={(text) => setFormData({ ...formData, jobTitle: text })}
+                value={profileData.jobTitle}
+                onChangeText={(text) => setProfileData({ ...profileData, jobTitle: text })}
                 placeholder="例：営業部長"
                 placeholderTextColor="#9ca3af"
               />
@@ -423,8 +423,8 @@ const ProfileEditModal = ({
               <Text style={styles.editFieldLabel}>電話番号</Text>
               <TextInput
                 style={styles.editInput}
-                value={formData.phone}
-                onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                value={profileData.phone}
+                onChangeText={(text) => setProfileData({ ...profileData, phone: text })}
                 placeholder="例：090-1234-5678"
                 placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
@@ -443,8 +443,8 @@ const ProfileEditModal = ({
               </View>
               <TextInput
                 style={styles.editInput}
-                value={formData.hometown}
-                onChangeText={(text) => setFormData({ ...formData, hometown: text })}
+                value={profileData.hometown}
+                onChangeText={(text) => setProfileData({ ...profileData, hometown: text })}
                 placeholder="例：広島県広島市"
                 placeholderTextColor="#9ca3af"
               />
@@ -457,8 +457,8 @@ const ProfileEditModal = ({
               </View>
               <TextInput
                 style={styles.editInput}
-                value={formData.school}
-                onChangeText={(text) => setFormData({ ...formData, school: text })}
+                value={profileData.school}
+                onChangeText={(text) => setProfileData({ ...profileData, school: text })}
                 placeholder="例：慶應義塾大学"
                 placeholderTextColor="#9ca3af"
               />
@@ -471,8 +471,8 @@ const ProfileEditModal = ({
               </View>
               <TextInput
                 style={styles.editInput}
-                value={formData.hobbies}
-                onChangeText={(text) => setFormData({ ...formData, hobbies: text })}
+                value={profileData.hobbies}
+                onChangeText={(text) => setProfileData({ ...profileData, hobbies: text })}
                 placeholder="例：ゴルフ、読書"
                 placeholderTextColor="#9ca3af"
               />
@@ -485,8 +485,8 @@ const ProfileEditModal = ({
               </View>
               <TextInput
                 style={[styles.editInput, styles.editTextArea]}
-                value={formData.bio}
-                onChangeText={(text) => setFormData({ ...formData, bio: text })}
+                value={profileData.bio}
+                onChangeText={(text) => setProfileData({ ...profileData, bio: text })}
                 placeholder="自己紹介文を入力してください"
                 placeholderTextColor="#9ca3af"
                 multiline
