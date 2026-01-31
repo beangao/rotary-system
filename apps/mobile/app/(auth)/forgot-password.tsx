@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
+import { Check, ChevronLeft } from 'lucide-react-native';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -56,7 +57,7 @@ export default function ForgotPasswordScreen() {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.successContent}>
           <View style={styles.successIcon}>
-            <Text style={styles.successIconText}>✓</Text>
+            <Check size={48} color="#16a34a" strokeWidth={3} />
           </View>
           <Text style={styles.successTitle}>メールを送信しました</Text>
           <Text style={styles.successDescription}>
@@ -135,7 +136,7 @@ export default function ForgotPasswordScreen() {
             {/* 戻るリンク */}
             <View style={styles.footer}>
               <TouchableOpacity onPress={() => router.back()}>
-                <Text style={styles.linkText}>← ログイン画面に戻る</Text>
+                <View style={styles.linkContent}><ChevronLeft size={18} color="#1e3a8a" strokeWidth={2} /><Text style={styles.linkText}>ログイン画面に戻る</Text></View>
               </TouchableOpacity>
             </View>
           </View>

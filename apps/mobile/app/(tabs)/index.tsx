@@ -14,6 +14,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/stores/auth.store';
 import { api } from '../../src/services/api';
 import { Event, Notification } from '../../src/types';
+import {
+  Bell,
+  Calendar,
+  MapPin,
+  MessageSquare,
+  Check,
+  Users,
+  ChevronRight,
+} from 'lucide-react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -121,7 +130,10 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/notifications')}
               style={styles.seeAllButton}
             >
-              <Text style={styles.seeAllText}>一覧を見る →</Text>
+              <View style={styles.seeAllContent}>
+                <Text style={styles.seeAllText}>一覧を見る</Text>
+                <ChevronRight size={18} color="#1e3a8a" strokeWidth={2} />
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -132,7 +144,7 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.notificationIconContainer}>
-                <Text style={styles.notificationIcon}>🔔</Text>
+                <Bell size={20} color="#ffffff" strokeWidth={2} />
               </View>
               <View style={styles.notificationContent}>
                 <Text style={styles.notificationTitle}>{latestNotification.title}</Text>
@@ -155,20 +167,21 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionIcon}>📅</Text>
+              <Calendar size={20} color="#1e3a8a" strokeWidth={2} style={styles.sectionIconStyle} />
               <Text style={styles.sectionTitle}>次回例会</Text>
             </View>
           </View>
 
           {nextEvent ? (
             <View style={styles.eventCard}>
+
               {/* イベント詳細 */}
               <LinearGradient
                 colors={['#1e3a8a', '#1d4ed8']}
                 style={styles.eventHeader}
               >
                 <View style={styles.eventDateRow}>
-                  <Text style={styles.eventIcon}>📅</Text>
+                  <Calendar size={18} color="#ffffff" strokeWidth={2} style={styles.eventIconStyle} />
                   <Text style={styles.eventDateTime}>
                     {formatDate(nextEvent.startAt).year}年
                     {formatDate(nextEvent.startAt).month}月
@@ -180,7 +193,7 @@ export default function HomeScreen() {
                 </View>
                 {nextEvent.venue && (
                   <View style={styles.eventDateRow}>
-                    <Text style={styles.eventIcon}>📍</Text>
+                    <MapPin size={18} color="#ffffff" strokeWidth={2} style={styles.eventIconStyle} />
                     <Text style={styles.eventVenue}>{nextEvent.venue}</Text>
                   </View>
                 )}
@@ -197,7 +210,7 @@ export default function HomeScreen() {
               {nextEvent.description && (
                 <View style={styles.talkSection}>
                   <View style={styles.talkRow}>
-                    <Text style={styles.talkIcon}>💬</Text>
+                    <MessageSquare size={18} color="#1e3a8a" strokeWidth={2} style={styles.talkIconStyle} />
                     <View style={styles.talkContent}>
                       <Text style={styles.talkLabel}>卓話・内容</Text>
                       <Text style={styles.talkDescription}>{nextEvent.description}</Text>
@@ -213,7 +226,7 @@ export default function HomeScreen() {
                 {attendanceStatus ? (
                   <View style={styles.answeredContainer}>
                     <View style={styles.answeredBadge}>
-                      <Text style={styles.answeredIcon}>✓</Text>
+                      <Check size={20} color="#1e3a8a" strokeWidth={2.5} />
                       <Text style={styles.answeredText}>
                         回答済み: {attendanceStatus === 'attending' ? '出席' : attendanceStatus === 'absent' ? '欠席' : '未定'}
                       </Text>
@@ -264,7 +277,7 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.emptyEvent}>
-              <Text style={styles.emptyIcon}>📅</Text>
+              <Calendar size={40} color="#9ca3af" strokeWidth={1.5} />
               <Text style={styles.emptyText}>予定されている例会はありません</Text>
             </View>
           )}
@@ -286,10 +299,10 @@ export default function HomeScreen() {
               end={{ x: 1, y: 0 }}
             >
               <View style={styles.quickAccessContent}>
-                <Text style={styles.quickAccessIcon}>👥</Text>
+                <Users size={28} color="#ffffff" strokeWidth={2} />
                 <Text style={styles.quickAccessText}>会員名簿を開く</Text>
               </View>
-              <Text style={styles.quickAccessChevron}>→</Text>
+              <ChevronRight size={24} color="#ffffff" strokeWidth={2} />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -302,7 +315,10 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/events')}
               style={styles.seeAllButton}
             >
-              <Text style={styles.seeAllText}>一覧を見る →</Text>
+              <View style={styles.seeAllContent}>
+                <Text style={styles.seeAllText}>一覧を見る</Text>
+                <ChevronRight size={18} color="#1e3a8a" strokeWidth={2} />
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -315,7 +331,7 @@ export default function HomeScreen() {
                 <Text style={styles.scheduleItemTitle}>イベント一覧</Text>
                 <Text style={styles.scheduleItemSubtitle}>すべてのイベントを確認</Text>
               </View>
-              <Text style={styles.scheduleChevron}>→</Text>
+              <ChevronRight size={18} color="#9ca3af" strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
@@ -369,8 +385,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  sectionIcon: {
-    fontSize: 20,
+  sectionIconStyle: {
     marginRight: 8,
   },
   sectionTitle: {
@@ -381,10 +396,15 @@ const styles = StyleSheet.create({
   seeAllButton: {
     padding: 4,
   },
+  seeAllContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   seeAllText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1e3a8a',
+    marginRight: 4,
   },
   // Notification
   notificationCard: {
@@ -403,9 +423,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  notificationIcon: {
-    fontSize: 20,
   },
   notificationContent: {
     flex: 1,
@@ -435,10 +452,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#9ca3af',
-  },
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: 12,
+    marginTop: 12,
   },
   emptyEvent: {
     backgroundColor: '#ffffff',
@@ -467,8 +481,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  eventIcon: {
-    fontSize: 18,
+  eventIconStyle: {
     marginRight: 8,
   },
   eventDateTime: {
@@ -502,8 +515,7 @@ const styles = StyleSheet.create({
   talkRow: {
     flexDirection: 'row',
   },
-  talkIcon: {
-    fontSize: 18,
+  talkIconStyle: {
     marginRight: 8,
     marginTop: 2,
   },
@@ -578,11 +590,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-  },
-  answeredIcon: {
-    fontSize: 20,
-    color: '#1e3a8a',
-    marginRight: 8,
+    gap: 8,
   },
   answeredText: {
     fontSize: 18,
@@ -620,18 +628,11 @@ const styles = StyleSheet.create({
   quickAccessContent: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  quickAccessIcon: {
-    fontSize: 28,
-    marginRight: 16,
+    gap: 16,
   },
   quickAccessText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  quickAccessChevron: {
-    fontSize: 24,
     color: '#ffffff',
   },
   // Schedule
@@ -664,9 +665,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 2,
-  },
-  scheduleChevron: {
-    fontSize: 18,
-    color: '#9ca3af',
   },
 });

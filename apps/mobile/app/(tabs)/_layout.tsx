@@ -1,21 +1,24 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Home, Users, Calendar, Bell, User } from 'lucide-react-native';
 
-// シンプルなアイコンコンポーネント
+// SVGアイコンコンポーネント
 const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
-  const icons: Record<string, string> = {
-    home: '🏠',
-    members: '👥',
-    events: '📅',
-    notifications: '🔔',
-    mypage: '👤',
+  const color = focused ? '#1e3a8a' : '#9ca3af';
+  const size = 24;
+  const strokeWidth = focused ? 2.5 : 2;
+
+  const icons: Record<string, React.ReactNode> = {
+    home: <Home size={size} color={color} strokeWidth={strokeWidth} />,
+    members: <Users size={size} color={color} strokeWidth={strokeWidth} />,
+    events: <Calendar size={size} color={color} strokeWidth={strokeWidth} />,
+    notifications: <Bell size={size} color={color} strokeWidth={strokeWidth} />,
+    mypage: <User size={size} color={color} strokeWidth={strokeWidth} />,
   };
 
   return (
     <View style={styles.iconContainer}>
-      <Text style={[styles.icon, focused && styles.iconFocused]}>
-        {icons[name] || '•'}
-      </Text>
+      {icons[name]}
     </View>
   );
 };
@@ -90,11 +93,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 24,
-  },
-  iconFocused: {
-    transform: [{ scale: 1.1 }],
+    width: 28,
+    height: 28,
   },
 });

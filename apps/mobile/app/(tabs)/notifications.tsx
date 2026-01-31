@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
 import { Notification } from '../../src/types';
+import { ChevronLeft, ChevronRight, Bell } from 'lucide-react-native';
 
 const getCategoryStyle = (category: string) => {
   switch (category) {
@@ -136,7 +137,7 @@ export default function NotificationsScreen() {
           </View>
 
           {/* 矢印 */}
-          <Text style={styles.chevron}>›</Text>
+          <ChevronRight size={24} color="#9ca3af" strokeWidth={2} />
         </View>
       </TouchableOpacity>
     );
@@ -162,7 +163,7 @@ export default function NotificationsScreen() {
               style={styles.modalBackButton}
               onPress={() => setSelectedNotification(null)}
             >
-              <Text style={styles.modalBackText}>←</Text>
+              <ChevronLeft size={24} color="#374151" strokeWidth={2} />
             </TouchableOpacity>
             <Text style={styles.modalHeaderTitle}>お知らせ詳細</Text>
             <View style={styles.modalHeaderSpacer} />
@@ -225,7 +226,7 @@ export default function NotificationsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🔔</Text>
+            <Bell size={64} color="#9ca3af" strokeWidth={1.5} />
             <Text style={styles.emptyTitle}>お知らせがありません</Text>
             <Text style={styles.emptyText}>新しいお知らせが届くとここに表示されます</Text>
           </View>

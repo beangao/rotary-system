@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/stores/auth.store';
+import { Mail, Lock, AlertTriangle, ChevronRight, ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -91,7 +92,7 @@ export default function LoginScreen() {
               {/* ログインエラー */}
               {loginError && (
                 <View style={styles.errorContainer}>
-                  <Text style={styles.errorIcon}>⚠️</Text>
+                  <AlertTriangle size={20} color="#991b1b" strokeWidth={2} />
                   <Text style={styles.errorText}>{loginError}</Text>
                 </View>
               )}
@@ -99,7 +100,7 @@ export default function LoginScreen() {
               {/* メールアドレス */}
               <View style={styles.inputGroup}>
                 <View style={styles.labelContainer}>
-                  <Text style={styles.labelIcon}>✉️</Text>
+                  <Mail size={20} color="#1e3a8a" strokeWidth={2} />
                   <Text style={styles.label}>メールアドレス</Text>
                 </View>
                 <TextInput
@@ -123,7 +124,7 @@ export default function LoginScreen() {
                 />
                 {errors.email && (
                   <View style={styles.fieldErrorContainer}>
-                    <Text style={styles.fieldErrorIcon}>⚠️</Text>
+                    <AlertTriangle size={16} color="#dc2626" strokeWidth={2} />
                     <Text style={styles.fieldErrorText}>{errors.email}</Text>
                   </View>
                 )}
@@ -132,7 +133,7 @@ export default function LoginScreen() {
               {/* パスワード */}
               <View style={styles.inputGroup}>
                 <View style={styles.labelContainer}>
-                  <Text style={styles.labelIcon}>🔒</Text>
+                  <Lock size={20} color="#1e3a8a" strokeWidth={2} />
                   <Text style={styles.label}>パスワード</Text>
                 </View>
                 <View style={styles.passwordContainer}>
@@ -164,7 +165,7 @@ export default function LoginScreen() {
                 </View>
                 {errors.password && (
                   <View style={styles.fieldErrorContainer}>
-                    <Text style={styles.fieldErrorIcon}>⚠️</Text>
+                    <AlertTriangle size={16} color="#dc2626" strokeWidth={2} />
                     <Text style={styles.fieldErrorText}>{errors.password}</Text>
                   </View>
                 )}
@@ -194,7 +195,7 @@ export default function LoginScreen() {
                 ) : (
                   <View style={styles.buttonContent}>
                     <Text style={styles.loginButtonText}>ログイン</Text>
-                    <Text style={styles.buttonChevron}>→</Text>
+                    <ChevronRight size={20} color="#ffffff" strokeWidth={2} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -205,7 +206,7 @@ export default function LoginScreen() {
                 onPress={() => router.back()}
                 disabled={isLoading}
               >
-                <Text style={styles.backButtonText}>← 前の画面に戻る</Text>
+                <View style={styles.backButtonContent}><ChevronLeft size={18} color="#1e3a8a" strokeWidth={2} /><Text style={styles.backButtonText}>前の画面に戻る</Text></View>
               </TouchableOpacity>
             </ScrollView>
           </View>

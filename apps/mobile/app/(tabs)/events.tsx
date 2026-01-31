@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
 import { Event } from '../../src/types';
+import { Calendar, MapPin, ChevronLeft, ChevronRight, Check } from 'lucide-react-native';
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   meeting: '定例会',
@@ -206,7 +207,7 @@ export default function EventsScreen() {
 
         {/* 日時・場所 */}
         <View style={styles.eventInfoRow}>
-          <Text style={styles.infoIcon}>📅</Text>
+          <Calendar size={16} color="#6b7280" strokeWidth={2} />
           <Text style={styles.infoText}>{formatDate(item.startAt)}</Text>
         </View>
         <View style={styles.eventInfoRow}>
@@ -215,7 +216,7 @@ export default function EventsScreen() {
         </View>
         {item.venue && (
           <View style={styles.eventInfoRow}>
-            <Text style={styles.infoIcon}>📍</Text>
+            <MapPin size={16} color="#6b7280" strokeWidth={2} />
             <Text style={styles.infoText}>{item.venue}</Text>
           </View>
         )}
@@ -311,7 +312,7 @@ export default function EventsScreen() {
               style={styles.modalBackButton}
               onPress={() => setSelectedEvent(null)}
             >
-              <Text style={styles.modalBackText}>←</Text>
+              <ChevronLeft size={24} color="#374151" strokeWidth={2} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>イベント詳細</Text>
             <View style={styles.modalHeaderSpacer} />
@@ -338,7 +339,7 @@ export default function EventsScreen() {
             {/* イベント情報カード */}
             <View style={styles.infoCard}>
               <View style={styles.infoCardRow}>
-                <Text style={styles.infoCardIcon}>📅</Text>
+                <Calendar size={18} color="#1e3a8a" strokeWidth={2} />
                 <View>
                   <Text style={styles.infoCardLabel}>日時</Text>
                   <Text style={styles.infoCardValue}>{formatDate(selectedEvent.startAt)}</Text>
@@ -350,7 +351,7 @@ export default function EventsScreen() {
 
               {selectedEvent.venue && (
                 <View style={styles.infoCardRow}>
-                  <Text style={styles.infoCardIcon}>📍</Text>
+                  <MapPin size={18} color="#1e3a8a" strokeWidth={2} />
                   <View>
                     <Text style={styles.infoCardLabel}>場所</Text>
                     <Text style={styles.infoCardValue}>{selectedEvent.venue}</Text>
@@ -400,7 +401,7 @@ export default function EventsScreen() {
                   disabled={isSubmitting}
                 >
                   {selectedEvent.myAttendance?.status === 'attending' && (
-                    <Text style={styles.modalButtonCheck}>✓</Text>
+                    <Check size={18} color="#ffffff" strokeWidth={2.5} />
                   )}
                   <Text
                     style={[
@@ -423,7 +424,7 @@ export default function EventsScreen() {
                   disabled={isSubmitting}
                 >
                   {selectedEvent.myAttendance?.status === 'absent' && (
-                    <Text style={styles.modalButtonCheck}>✓</Text>
+                    <Check size={18} color="#ffffff" strokeWidth={2.5} />
                   )}
                   <Text
                     style={[
@@ -446,7 +447,7 @@ export default function EventsScreen() {
 
             {selectedEvent.myAttendance?.status && (
               <View style={styles.thankYouMessage}>
-                <Text style={styles.thankYouIcon}>✓</Text>
+                <Check size={24} color="#1e3a8a" strokeWidth={2.5} />
                 <Text style={styles.thankYouText}>ご回答ありがとうございます</Text>
               </View>
             )}
@@ -477,7 +478,7 @@ export default function EventsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📅</Text>
+            <Calendar size={64} color="#9ca3af" strokeWidth={1.5} />
             <Text style={styles.emptyTitle}>イベントがありません</Text>
             <Text style={styles.emptyText}>予定されているイベントはありません</Text>
           </View>

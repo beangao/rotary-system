@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Mail, AlertTriangle, ChevronRight, ChevronLeft, Check } from 'lucide-react-native';
 import { api } from '../../src/services/api';
 
 export default function RegisterScreen() {
@@ -79,7 +80,7 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
             disabled={isLoading}
           >
-            <Text style={styles.backButtonText}>←</Text>
+            <ChevronLeft size={24} color="#374151" strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>新規登録</Text>
           <View style={styles.headerSpacer} />
@@ -93,7 +94,7 @@ export default function RegisterScreen() {
           {/* 説明セクション */}
           <View style={styles.infoCard}>
             <View style={styles.infoIconContainer}>
-              <Text style={styles.infoIcon}>✉️</Text>
+              <Mail size={24} color="#ffffff" strokeWidth={2} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoTitle}>招待メールを確認</Text>
@@ -106,7 +107,7 @@ export default function RegisterScreen() {
           {/* エラー表示 */}
           {error && (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorIcon}>⚠️</Text>
+              <AlertTriangle size={20} color="#991b1b" strokeWidth={2} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -115,7 +116,7 @@ export default function RegisterScreen() {
           <View style={styles.inputSection}>
             <View style={styles.inputCard}>
               <View style={styles.labelContainer}>
-                <Text style={styles.labelIcon}>✉️</Text>
+                <Mail size={20} color="#1e3a8a" strokeWidth={2} />
                 <Text style={styles.label}>メールアドレス</Text>
               </View>
               <TextInput
@@ -146,7 +147,7 @@ export default function RegisterScreen() {
               activeOpacity={0.7}
             >
               <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-                {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
+                {agreedToTerms && <Check size={14} color="#ffffff" strokeWidth={3} />}
               </View>
               <View style={styles.termsTextContainer}>
                 <Text style={styles.termsText}>
@@ -185,7 +186,7 @@ export default function RegisterScreen() {
             ) : (
               <View style={styles.buttonContent}>
                 <Text style={styles.submitButtonText}>認証コードを送信</Text>
-                <Text style={styles.buttonChevron}>→</Text>
+                <ChevronRight size={20} color="#ffffff" strokeWidth={2} />
               </View>
             )}
           </TouchableOpacity>

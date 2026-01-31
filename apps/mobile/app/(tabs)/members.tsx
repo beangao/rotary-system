@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/services/api';
 import { Member } from '../../src/types';
+import { ChevronRight, ChevronLeft, Check, Users, Search, Filter } from 'lucide-react-native';
 
 // 五十音インデックス
 const KANA_INDEX = ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'];
@@ -124,7 +125,7 @@ export default function MembersScreen() {
           <Text style={styles.memberClassification}>{item.classification}</Text>
         )}
       </View>
-      <Text style={styles.chevron}>→</Text>
+      <ChevronRight size={20} color="#9ca3af" strokeWidth={2} />
     </TouchableOpacity>
   );
 
@@ -192,7 +193,7 @@ export default function MembersScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>👥</Text>
+            <Users size={64} color="#9ca3af" strokeWidth={1.5} />
             <Text style={styles.emptyText}>会員が見つかりません</Text>
           </View>
         }
@@ -232,7 +233,7 @@ export default function MembersScreen() {
               >
                 すべて
               </Text>
-              {selectedOccupation === 'all' && <Text style={styles.checkmark}>✓</Text>}
+              {selectedOccupation === 'all' && <Check size={18} color="#1e3a8a" strokeWidth={2.5} />}
             </TouchableOpacity>
             {occupations.map((occupation) => (
               <TouchableOpacity
@@ -254,7 +255,7 @@ export default function MembersScreen() {
                 >
                   {occupation}
                 </Text>
-                {selectedOccupation === occupation && <Text style={styles.checkmark}>✓</Text>}
+                {selectedOccupation === occupation && <Check size={18} color="#1e3a8a" strokeWidth={2.5} />}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -288,7 +289,7 @@ export default function MembersScreen() {
           <SafeAreaView style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setSelectedMember(null)}>
-                <Text style={styles.modalBackButton}>← 戻る</Text>
+                <View style={styles.modalBackButtonContent}><ChevronLeft size={20} color="#1e3a8a" strokeWidth={2} /><Text style={styles.modalBackButtonText}>戻る</Text></View>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>会員情報</Text>
               <View style={{ width: 60 }} />

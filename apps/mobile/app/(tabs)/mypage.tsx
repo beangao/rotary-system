@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/auth.store';
 import { api } from '../../src/services/api';
+import { Lock, Bell, Home, ChevronLeft, ChevronRight, Settings, GraduationCap, Heart, FileText } from 'lucide-react-native';
 
 export default function MyPageScreen() {
   const router = useRouter();
@@ -114,7 +115,7 @@ export default function MyPageScreen() {
             </View>
             <Text style={styles.sectionTitle}>ロータリー基本情報</Text>
             <View style={styles.lockBadge}>
-              <Text style={styles.lockIcon}>🔒</Text>
+              <Lock size={16} color="#6b7280" strokeWidth={2} />
             </View>
           </View>
 
@@ -438,7 +439,7 @@ const ProfileEditModal = ({
 
             <View style={styles.editFieldCard}>
               <View style={styles.editFieldLabelRow}>
-                <Text style={styles.editFieldEmoji}>🏠</Text>
+                <Home size={20} color="#1e3a8a" strokeWidth={2} />
                 <Text style={styles.editFieldLabel}>出身地</Text>
               </View>
               <TextInput
@@ -584,7 +585,7 @@ const PasswordChangeModal = ({
           {/* ヘッダー */}
           <View style={styles.modalHeader}>
             <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-              <Text style={styles.modalCloseText}>←</Text>
+              <ChevronLeft size={24} color="#374151" strokeWidth={2} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>パスワード変更</Text>
             <View style={styles.modalHeaderSpacer} />
@@ -593,7 +594,7 @@ const PasswordChangeModal = ({
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
             {/* 説明 */}
             <View style={styles.passwordInfoCard}>
-              <Text style={styles.passwordInfoIcon}>🔒</Text>
+              <Lock size={24} color="#ffffff" strokeWidth={2} />
               <View style={styles.passwordInfoContent}>
                 <Text style={styles.passwordInfoTitle}>セキュリティ設定</Text>
                 <Text style={styles.passwordInfoText}>

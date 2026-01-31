@@ -12,6 +12,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
+import { Mail, AlertTriangle, ChevronLeft } from 'lucide-react-native';
 
 export default function VerifyCodeScreen() {
   const router = useRouter();
@@ -115,7 +116,7 @@ export default function VerifyCodeScreen() {
           onPress={() => router.back()}
           disabled={isVerifying}
         >
-          <Text style={styles.backButtonText}>←</Text>
+          <ChevronLeft size={24} color="#374151" strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>認証コード入力</Text>
         <View style={styles.headerSpacer} />
@@ -125,7 +126,7 @@ export default function VerifyCodeScreen() {
         {/* メールアイコンと説明 */}
         <View style={styles.iconSection}>
           <View style={styles.iconCircle}>
-            <Text style={styles.mailIcon}>✉️</Text>
+            <Mail size={40} color="#1e3a8a" strokeWidth={2} />
           </View>
           <Text style={styles.title}>メールを確認してください</Text>
           <Text style={styles.description}>
@@ -138,7 +139,7 @@ export default function VerifyCodeScreen() {
         {/* エラーメッセージ */}
         {error && (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>⚠️</Text>
+            <AlertTriangle size={20} color="#991b1b" strokeWidth={2} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}

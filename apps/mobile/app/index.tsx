@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { useAuthStore } from '../src/stores/auth.store';
+import { UserPlus, LogIn, ChevronRight } from 'lucide-react-native';
 
 export default function LaunchScreen() {
   const router = useRouter();
@@ -61,13 +62,13 @@ export default function LaunchScreen() {
               >
                 <View style={styles.buttonHeader}>
                   <View style={styles.buttonIconContainer}>
-                    <Text style={styles.buttonIcon}>👤</Text>
+                    <UserPlus size={32} color="#ffffff" strokeWidth={2} />
                   </View>
                   <View style={styles.buttonTextContainer}>
                     <Text style={styles.primaryButtonTitle}>初めての方</Text>
                     <Text style={styles.primaryButtonSubtitle}>新規登録</Text>
                   </View>
-                  <Text style={styles.chevron}>→</Text>
+                  <ChevronRight size={24} color="#ffffff" strokeWidth={2} />
                 </View>
                 <View style={styles.buttonDescription}>
                   <Text style={styles.buttonDescriptionText}>
@@ -85,13 +86,13 @@ export default function LaunchScreen() {
               >
                 <View style={styles.buttonHeader}>
                   <View style={styles.secondaryButtonIconContainer}>
-                    <Text style={styles.buttonIcon}>🔑</Text>
+                    <LogIn size={32} color="#374151" strokeWidth={2} />
                   </View>
                   <View style={styles.buttonTextContainer}>
                     <Text style={styles.secondaryButtonTitle}>アカウントをお持ちの方</Text>
                     <Text style={styles.secondaryButtonSubtitle}>ログイン</Text>
                   </View>
-                  <Text style={styles.chevronGray}>→</Text>
+                  <ChevronRight size={24} color="#9ca3af" strokeWidth={2} />
                 </View>
                 <View style={styles.secondaryButtonDescription}>
                   <Text style={styles.secondaryButtonDescriptionText}>
@@ -230,7 +231,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   buttonIcon: {
-    fontSize: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonTextContainer: {
     flex: 1,
@@ -246,12 +248,8 @@ const styles = StyleSheet.create({
     color: '#93c5fd',
   },
   chevron: {
-    fontSize: 20,
-    color: '#ffffff',
-  },
-  chevronGray: {
-    fontSize: 20,
-    color: '#9ca3af',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonDescription: {
     backgroundColor: 'rgba(29, 78, 216, 0.5)',

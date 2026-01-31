@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
 import { useAuthStore } from '../../src/stores/auth.store';
+import { Lock, AlertTriangle, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react-native';
 
 export default function SetPasswordScreen() {
   const router = useRouter();
@@ -83,7 +84,7 @@ export default function SetPasswordScreen() {
           onPress={() => router.back()}
           disabled={isLoading}
         >
-          <Text style={styles.backButtonText}>←</Text>
+          <ChevronLeft size={24} color="#374151" strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>パスワード設定</Text>
         <View style={styles.headerSpacer} />
@@ -101,7 +102,7 @@ export default function SetPasswordScreen() {
           {/* 説明カード */}
           <View style={styles.infoCard}>
             <View style={styles.infoIconContainer}>
-              <Text style={styles.infoIcon}>🔒</Text>
+              <Lock size={24} color="#ffffff" strokeWidth={2} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoTitle}>安全なパスワードを設定</Text>
@@ -120,7 +121,7 @@ export default function SetPasswordScreen() {
           {/* パスワード入力 */}
           <View style={styles.inputCard}>
             <View style={styles.labelContainer}>
-              <Text style={styles.labelIcon}>🔒</Text>
+              <Lock size={20} color="#1e3a8a" strokeWidth={2} />
               <Text style={styles.label}>パスワード</Text>
             </View>
             <View style={styles.passwordContainer}>
@@ -151,7 +152,7 @@ export default function SetPasswordScreen() {
             </View>
             {errors.password && (
               <View style={styles.fieldErrorContainer}>
-                <Text style={styles.fieldErrorIcon}>⚠️</Text>
+                <AlertTriangle size={16} color="#dc2626" strokeWidth={2} />
                 <Text style={styles.fieldErrorText}>{errors.password}</Text>
               </View>
             )}
@@ -179,7 +180,7 @@ export default function SetPasswordScreen() {
           {/* 確認用パスワード入力 */}
           <View style={styles.inputCard}>
             <View style={styles.labelContainer}>
-              <Text style={styles.labelIcon}>🔒</Text>
+              <Lock size={20} color="#1e3a8a" strokeWidth={2} />
               <Text style={styles.label}>パスワード（確認）</Text>
             </View>
             <View style={styles.passwordContainer}>
@@ -210,7 +211,7 @@ export default function SetPasswordScreen() {
             </View>
             {errors.confirmPassword && (
               <View style={styles.fieldErrorContainer}>
-                <Text style={styles.fieldErrorIcon}>⚠️</Text>
+                <AlertTriangle size={16} color="#dc2626" strokeWidth={2} />
                 <Text style={styles.fieldErrorText}>{errors.confirmPassword}</Text>
               </View>
             )}
@@ -233,7 +234,7 @@ export default function SetPasswordScreen() {
             ) : (
               <View style={styles.buttonContent}>
                 <Text style={styles.submitButtonText}>パスワードを設定</Text>
-                <Text style={styles.buttonChevron}>→</Text>
+                <ChevronRight size={20} color="#ffffff" strokeWidth={2} />
               </View>
             )}
           </TouchableOpacity>
