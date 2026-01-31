@@ -1,0 +1,12 @@
+claude web版経由で該当案件の開発を色々ヒアリングしました。   
+- *.md claude web経由でヒアリングした情報 
+- docs/design/* 画面のUI。基本はこのUIに基づく開発したい
+  - ファイルの書き方は無視しても良い。画面上に表示する要素や色、レイアウトなどは該当ファイルに基づく開発
+- docs/design/registration-flow-specification.md mobile memberの会員登録フロー 
+- docs/design/画面一覧.txt は画面一覧
+- docs/meeting/*.md 会議のメモ
+これらファイルを理解してシステムを開発進めて行きたい。開発進めるために何が事前に私に確認することがあれ   
+ばヒラリングしながら進めてください。
+
+メール: jimukyoku@amagasaki-nishi-rc.jp
+パスワード: Admin123!   
