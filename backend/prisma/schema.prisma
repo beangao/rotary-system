@@ -129,7 +129,7 @@ model Event {
 
   title            String    @db.VarChar(200)
   description      String?   @db.Text
-  eventType        String    @map("event_type") @db.VarChar(50) // regular_meeting, special_event, etc.
+  eventType        String    @map("event_type") @db.VarChar(50) // meeting, service, social, district, other
 
   startAt          DateTime  @map("start_at")
   endAt            DateTime? @map("end_at")
@@ -140,7 +140,17 @@ model Event {
 
   responseDeadline DateTime? @map("response_deadline")
 
+  // ステータス管理
+  status           String    @default("draft") @db.VarChar(20) // draft, published, closed, cancelled, postponed
   isPublished      Boolean   @default(false) @map("is_published")
+
+  // 延期対応
+  originalDate     DateTime? @map("original_date")
+  postponedDate    DateTime? @map("postponed_date")
+
+  // 添付ファイル
+  attachmentUrl    String?   @map("attachment_url") @db.VarChar(500)
+  attachmentName   String?   @map("attachment_name") @db.VarChar(200)
 
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
@@ -150,7 +160,7 @@ model Event {
   attendances Attendance[]
 
   @@index([clubId, startAt])
-  @@index([clubId, isPublished])
+  @@index([clubId, status])
   @@map("events")
 }
 

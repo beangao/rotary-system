@@ -3,6 +3,8 @@ import authRoutes from './auth.routes';
 import memberRoutes from './member.routes';
 import eventRoutes from './event.routes';
 import notificationRoutes from './notification.routes';
+import clubRoutes from './club.routes';
+import adminRoutes from './admin.routes';
 
 const router = Router();
 
@@ -22,5 +24,11 @@ router.use('/events', eventRoutes);
 
 // お知らせ
 router.use('/notifications', notificationRoutes);
+
+// クラブ設定
+router.use('/club', clubRoutes);
+
+// 管理者
+router.use('/admins', adminRoutes);
 
 export default router;

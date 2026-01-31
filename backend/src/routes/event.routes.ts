@@ -7,6 +7,7 @@ import {
   deleteEvent,
   getAttendances,
   upsertAttendance,
+  proxyAttendance,
 } from '../controllers/event.controller';
 import { validate } from '../middlewares/validation';
 import { authenticateJWT, adminOnly, memberOnly } from '../middlewares/auth';
@@ -30,6 +31,9 @@ router.post('/:id/attendance', memberOnly, validate(attendanceSchema), upsertAtt
 
 // 出欠一覧（管理者用）
 router.get('/:id/attendances', adminOnly, getAttendances);
+
+// 代理回答（管理者用）
+router.put('/:id/attendances/:memberId', adminOnly, proxyAttendance);
 
 // 管理者用CRUD
 router.post('/', adminOnly, validate(createEventSchema), createEvent);

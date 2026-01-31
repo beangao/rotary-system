@@ -8,7 +8,7 @@ import {
   Plus,
   Mail,
   Edit2,
-  ChevronRight,
+  Trash2,
   Users,
   UserCheck,
   UserX,
@@ -45,7 +45,7 @@ export default function MembersPage() {
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get('status') || '';
 
-  const [members, setMembers] = useState<Member[]>([]);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialStatus);
@@ -53,13 +53,13 @@ export default function MembersPage() {
 
   const fetchMembers = async () => {
     try {
+      // 常に全会員を取得（フィルタリングはクライアント側で行う）
       const params: Record<string, string> = {};
       if (searchTerm) params.search = searchTerm;
-      if (statusFilter) params.status = statusFilter;
 
       const response = await membersApi.getAll(params);
       if (response.data.success) {
-        setMembers(response.data.data.members);
+        setAllMembers(response.data.data.members);
       }
     } catch (error) {
       console.error('Failed to fetch members:', error);
@@ -70,7 +70,7 @@ export default function MembersPage() {
 
   useEffect(() => {
     fetchMembers();
-  }, [statusFilter]);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,16 +90,30 @@ export default function MembersPage() {
     }
   };
 
-  const statusCounts = {
-    all: members.length,
-    active: members.filter((m) => m.status === 'active').length,
-    invited: members.filter((m) => m.status === 'invited').length,
-    inactive: members.filter((m) => m.status === 'inactive').length,
+  const handleDelete = async (memberId: string, memberName: string) => {
+    if (!confirm(`${memberName}を削除しますか？`)) return;
+
+    try {
+      await membersApi.delete(memberId);
+      setAllMembers(allMembers.filter((m) => m.id !== memberId));
+    } catch (error) {
+      console.error('Failed to delete member:', error);
+      alert('削除に失敗しました');
+    }
   };
 
+  // ステータス別のカウント（常に全会員から計算）
+  const statusCounts = {
+    all: allMembers.length,
+    active: allMembers.filter((m) => m.status === 'active').length,
+    invited: allMembers.filter((m) => m.status === 'invited').length,
+    inactive: allMembers.filter((m) => m.status === 'inactive').length,
+  };
+
+  // 表示用のフィルタリング（ステータスフィルターを適用）
   const filteredMembers = statusFilter
-    ? members.filter((m) => m.status === statusFilter)
-    : members;
+    ? allMembers.filter((m) => m.status === statusFilter)
+    : allMembers;
 
   return (
     <div className="space-y-6">
@@ -177,75 +191,213 @@ export default function MembersPage() {
             <p>会員が見つかりません</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {filteredMembers.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  {/* アバター */}
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {member.lastName.charAt(0)}
-                  </div>
-
-                  {/* 情報 */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-gray-900">
-                        {member.lastName} {member.firstName}
-                      </h3>
-                      {member.memberNumber && (
-                        <span className="text-xs text-gray-500">
-                          #{member.memberNumber}
-                        </span>
+          <>
+            {/* PC: テーブル表示 */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      会員
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      会員番号
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      役職
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      会社名
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      メール
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      ステータス
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      アクション
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredMembers.map((member, index) => (
+                    <tr
+                      key={member.id}
+                      className={cn(
+                        'hover:bg-gray-50 transition-colors',
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
                       )}
-                      <span
-                        className={cn(
-                          'px-2 py-0.5 rounded-full text-xs font-medium',
-                          STATUS_LABELS[member.status]?.bg,
-                          STATUS_LABELS[member.status]?.color
-                        )}
-                      >
-                        {STATUS_LABELS[member.status]?.label || member.status}
-                      </span>
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold flex-shrink-0">
+                            {member.lastName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              {member.lastName} {member.firstName}
+                            </div>
+                            {member.lastNameKana && (
+                              <div className="text-xs text-gray-500">
+                                {member.lastNameKana} {member.firstNameKana}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {member.memberNumber || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {member.position || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {member.companyName || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {member.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={cn(
+                            'px-2 py-1 rounded-full text-xs font-medium',
+                            STATUS_LABELS[member.status]?.bg,
+                            STATUS_LABELS[member.status]?.color
+                          )}
+                        >
+                          {STATUS_LABELS[member.status]?.label || member.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
+                          {member.status === 'invited' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSendInvite(member.id)}
+                              isLoading={sendingInvite === member.id}
+                              className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                              title="招待メール再送"
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Link href={`/members/${member.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              title="編集"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              handleDelete(member.id, `${member.lastName} ${member.firstName}`)
+                            }
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="削除"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* スマホ: カード表示 */}
+            <div className="lg:hidden divide-y divide-gray-200">
+              {filteredMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className="p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start gap-4">
+                    {/* アバター */}
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                      {member.lastName.charAt(0)}
                     </div>
-                    <p className="text-sm text-gray-600 truncate">
-                      {member.position && `${member.position} • `}
-                      {member.companyName || member.email}
-                    </p>
+
+                    {/* 情報 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link
+                          href={`/members/${member.id}`}
+                          className="font-bold text-gray-900 hover:text-blue-600"
+                        >
+                          {member.lastName} {member.firstName}
+                        </Link>
+                        {member.memberNumber && (
+                          <span className="text-xs text-gray-500">
+                            #{member.memberNumber}
+                          </span>
+                        )}
+                        <span
+                          className={cn(
+                            'px-2 py-0.5 rounded-full text-xs font-medium',
+                            STATUS_LABELS[member.status]?.bg,
+                            STATUS_LABELS[member.status]?.color
+                          )}
+                        >
+                          {STATUS_LABELS[member.status]?.label || member.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {member.position && `${member.position}`}
+                        {member.position && member.companyName && ' • '}
+                        {member.companyName}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">{member.email}</p>
+
+                      {/* アクション */}
+                      <div className="flex items-center gap-2 mt-3">
+                        {member.status === 'invited' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSendInvite(member.id)}
+                            isLoading={sendingInvite === member.id}
+                            className="flex items-center gap-1 text-yellow-600 border-yellow-300 hover:bg-yellow-50"
+                          >
+                            <Mail className="h-4 w-4" />
+                            再送
+                          </Button>
+                        )}
+                        <Link href={`/members/${member.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            編集
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleDelete(member.id, `${member.lastName} ${member.firstName}`)
+                          }
+                          className="flex items-center gap-1 text-red-600 border-red-300 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          削除
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* アクション */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {member.status === 'invited' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSendInvite(member.id)}
-                      isLoading={sendingInvite === member.id}
-                      className="flex items-center gap-1"
-                    >
-                      <Mail className="h-4 w-4" />
-                      <span className="hidden sm:inline">再送</span>
-                    </Button>
-                  )}
-                  <Link href={`/members/${member.id}`}>
-                    <Button variant="ghost" size="sm" className="flex items-center gap-1">
-                      <Edit2 className="h-4 w-4" />
-                      <span className="hidden sm:inline">編集</span>
-                    </Button>
-                  </Link>
-                  <Link href={`/members/${member.id}`}>
-                    <Button variant="ghost" size="icon">
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </Card>
     </div>

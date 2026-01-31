@@ -4,6 +4,31 @@ import { AppError } from '../middlewares/error-handler';
 import { sendInvitationEmail } from '../services/email.service';
 import { CreateMemberInput, UpdateMemberInput, UpdateProfileInput } from '../validators/member.validator';
 
+// DBからUIへのフィールド名変換
+const mapMemberToResponse = (member: any) => ({
+  id: member.id,
+  email: member.email,
+  memberNumber: member.memberNumber,
+  lastName: member.lastName,
+  firstName: member.firstName,
+  lastNameKana: member.lastNameKana,
+  firstNameKana: member.firstNameKana,
+  position: member.position,
+  joinDate: member.joinDate,
+  // UIフィールド名にマッピング
+  classification: member.industryClassification,
+  companyName: member.companyName,
+  department: member.department,
+  phone: member.phoneNumber,
+  // その他
+  status: member.status,
+  avatarUrl: member.avatarUrl,
+  profileCompleted: member.profileCompleted,
+  lastLoginAt: member.lastLoginAt,
+  createdAt: member.createdAt,
+  updatedAt: member.updatedAt,
+});
+
 // 会員一覧取得
 export const getMembers = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -25,6 +50,7 @@ export const getMembers = async (req: Request, res: Response, next: NextFunction
           { firstNameKana: { contains: search as string } },
           { email: { contains: search as string } },
           { memberNumber: { contains: search as string } },
+          { companyName: { contains: search as string } },
         ],
       }),
     };
@@ -40,11 +66,14 @@ export const getMembers = async (req: Request, res: Response, next: NextFunction
           firstName: true,
           lastNameKana: true,
           firstNameKana: true,
-          gender: true,
           position: true,
+          joinDate: true,
+          industryClassification: true,
+          companyName: true,
+          department: true,
+          phoneNumber: true,
           status: true,
           avatarUrl: true,
-          companyName: true,
           profileCompleted: true,
           lastLoginAt: true,
         },
@@ -55,10 +84,31 @@ export const getMembers = async (req: Request, res: Response, next: NextFunction
       prisma.member.count({ where }),
     ]);
 
+    // UIフィールド名にマッピング
+    const mappedMembers = members.map((member) => ({
+      id: member.id,
+      email: member.email,
+      memberNumber: member.memberNumber,
+      lastName: member.lastName,
+      firstName: member.firstName,
+      lastNameKana: member.lastNameKana,
+      firstNameKana: member.firstNameKana,
+      position: member.position,
+      joinDate: member.joinDate,
+      classification: member.industryClassification,
+      companyName: member.companyName,
+      department: member.department,
+      phone: member.phoneNumber,
+      status: member.status,
+      avatarUrl: member.avatarUrl,
+      profileCompleted: member.profileCompleted,
+      lastLoginAt: member.lastLoginAt,
+    }));
+
     res.json({
       success: true,
       data: {
-        members,
+        members: mappedMembers,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -105,9 +155,33 @@ export const getMemberById = async (req: Request, res: Response, next: NextFunct
       res.json({
         success: true,
         data: {
-          ...member,
+          id: member.id,
+          email: member.email,
+          memberNumber: member.memberNumber,
+          lastName: member.lastName,
+          firstName: member.firstName,
+          lastNameKana: member.lastNameKana,
+          firstNameKana: member.firstNameKana,
+          position: member.position,
+          joinDate: member.joinDate,
+          gender: member.gender,
+          birthDate: member.birthDate,
+          // UIフィールド名にマッピング
+          classification: member.industryClassification,
+          companyName: member.companyName,
+          department: member.department,
+          phone: member.phoneNumber,
+          // その他
+          avatarUrl: member.avatarUrl,
           hobbies: member.hobbies ? JSON.parse(member.hobbies) : [],
+          introduction: member.introduction,
           privacySettings,
+          status: member.status,
+          profileCompleted: member.profileCompleted,
+          lastLoginAt: member.lastLoginAt,
+          createdAt: member.createdAt,
+          updatedAt: member.updatedAt,
+          club: member.club,
         },
       });
       return;
@@ -128,11 +202,11 @@ export const getMemberById = async (req: Request, res: Response, next: NextFunct
         hobbies: member.hobbies ? JSON.parse(member.hobbies) : [],
         introduction: member.introduction,
         email: privacySettings.showEmail ? member.email : null,
-        phoneNumber: privacySettings.showPhone ? member.phoneNumber : null,
+        phone: privacySettings.showPhone ? member.phoneNumber : null,
         birthDate: privacySettings.showBirthDate ? member.birthDate : null,
         companyName: privacySettings.showCompany ? member.companyName : null,
         department: privacySettings.showCompany ? member.department : null,
-        industryClassification: privacySettings.showCompany ? member.industryClassification : null,
+        classification: privacySettings.showCompany ? member.industryClassification : null,
         club: member.club,
       },
     });
@@ -147,38 +221,72 @@ export const createMember = async (req: Request, res: Response, next: NextFuncti
     const user = req.user as Express.User & { clubId: string; club: { name: string } };
     const data = req.body as CreateMemberInput;
 
-    // 重複チェック
-    const existing = await prisma.member.findFirst({
+    // 重複チェック（メールアドレス）
+    const existingEmail = await prisma.member.findFirst({
       where: {
         clubId: user.clubId,
         email: data.email.toLowerCase(),
       },
     });
 
-    if (existing) {
+    if (existingEmail) {
       throw new AppError('このメールアドレスは既に登録されています', 400);
     }
+
+    // 重複チェック（会員番号）
+    const existingNumber = await prisma.member.findFirst({
+      where: {
+        clubId: user.clubId,
+        memberNumber: data.memberNumber,
+      },
+    });
+
+    if (existingNumber) {
+      throw new AppError('この会員番号は既に登録されています', 400);
+    }
+
+    // クラブ情報を取得
+    const club = await prisma.club.findUnique({
+      where: { id: user.clubId },
+      select: { name: true },
+    });
 
     const member = await prisma.member.create({
       data: {
         clubId: user.clubId,
         email: data.email.toLowerCase(),
+        memberNumber: data.memberNumber,
         lastName: data.lastName,
         firstName: data.firstName,
         lastNameKana: data.lastNameKana,
         firstNameKana: data.firstNameKana,
-        memberNumber: data.memberNumber,
-        gender: data.gender,
-        birthDate: data.birthDate ? new Date(data.birthDate) : null,
         position: data.position,
         joinDate: data.joinDate ? new Date(data.joinDate) : null,
+        // UIフィールド名からDBフィールド名にマッピング
+        industryClassification: data.classification || null,
+        companyName: data.companyName || null,
+        department: data.department || null,
+        phoneNumber: data.phone,
         status: 'invited',
       },
     });
 
+    // 招待メールを自動送信
+    const clubName = club?.name || 'ロータリークラブ';
+    const memberName = `${data.lastName} ${data.firstName}`;
+
+    try {
+      await sendInvitationEmail(data.email.toLowerCase(), clubName, memberName);
+      console.log(`招待メール送信完了: ${data.email}`);
+    } catch (emailError) {
+      console.error('招待メール送信エラー:', emailError);
+      // メール送信失敗しても会員作成は成功とする
+    }
+
     res.status(201).json({
       success: true,
-      data: member,
+      data: mapMemberToResponse(member),
+      message: '会員を登録し、招待メールを送信しました',
     });
   } catch (error) {
     next(error);
@@ -201,7 +309,7 @@ export const updateMember = async (req: Request, res: Response, next: NextFuncti
     }
 
     // メールアドレス変更時の重複チェック
-    if (data.email && data.email !== existing.email) {
+    if (data.email && data.email.toLowerCase() !== existing.email) {
       const duplicate = await prisma.member.findFirst({
         where: {
           clubId: user.clubId,
@@ -215,19 +323,46 @@ export const updateMember = async (req: Request, res: Response, next: NextFuncti
       }
     }
 
+    // 会員番号変更時の重複チェック
+    if (data.memberNumber && data.memberNumber !== existing.memberNumber) {
+      const duplicate = await prisma.member.findFirst({
+        where: {
+          clubId: user.clubId,
+          memberNumber: data.memberNumber,
+          id: { not: id },
+        },
+      });
+
+      if (duplicate) {
+        throw new AppError('この会員番号は既に登録されています', 400);
+      }
+    }
+
+    // 更新データの構築（UIフィールド名からDBフィールド名にマッピング）
+    const updateData: any = {};
+
+    if (data.email !== undefined) updateData.email = data.email.toLowerCase();
+    if (data.memberNumber !== undefined) updateData.memberNumber = data.memberNumber;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastNameKana !== undefined) updateData.lastNameKana = data.lastNameKana;
+    if (data.firstNameKana !== undefined) updateData.firstNameKana = data.firstNameKana;
+    if (data.position !== undefined) updateData.position = data.position;
+    if (data.joinDate !== undefined) updateData.joinDate = data.joinDate ? new Date(data.joinDate) : null;
+    if (data.classification !== undefined) updateData.industryClassification = data.classification;
+    if (data.companyName !== undefined) updateData.companyName = data.companyName;
+    if (data.department !== undefined) updateData.department = data.department;
+    if (data.phone !== undefined) updateData.phoneNumber = data.phone;
+    if (data.status !== undefined) updateData.status = data.status;
+
     const member = await prisma.member.update({
       where: { id },
-      data: {
-        ...data,
-        email: data.email?.toLowerCase(),
-        birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
-        joinDate: data.joinDate ? new Date(data.joinDate) : undefined,
-      },
+      data: updateData,
     });
 
     res.json({
       success: true,
-      data: member,
+      data: mapMemberToResponse(member),
     });
   } catch (error) {
     next(error);
@@ -271,10 +406,11 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     const member = await prisma.member.update({
       where: { id: user.id },
       data: {
-        industryClassification: data.industryClassification,
+        // UIフィールド名からDBフィールド名にマッピング
+        industryClassification: data.classification,
         companyName: data.companyName,
         department: data.department,
-        phoneNumber: data.phoneNumber,
+        phoneNumber: data.phone,
         hobbies: data.hobbies ? JSON.stringify(data.hobbies) : undefined,
         introduction: data.introduction,
         privacySettings: data.privacySettings ? JSON.stringify(data.privacySettings) : undefined,
@@ -285,7 +421,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       data: {
-        ...member,
+        ...mapMemberToResponse(member),
         hobbies: member.hobbies ? JSON.parse(member.hobbies) : [],
         privacySettings: member.privacySettings ? JSON.parse(member.privacySettings) : null,
       },

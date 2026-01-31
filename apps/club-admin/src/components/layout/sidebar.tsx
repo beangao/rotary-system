@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 const navigationItems = [
   { id: 'dashboard', label: 'ダッシュボード', icon: LayoutDashboard, href: '/' },
   { id: 'members', label: '会員管理', icon: Users, href: '/members' },
-  { id: 'events', label: '例会・イベント', icon: Calendar, href: '/events' },
+  { id: 'events', label: 'イベント・例会管理', icon: Calendar, href: '/events' },
   { id: 'notifications', label: 'お知らせ管理', icon: Bell, href: '/notifications' },
   { id: 'settings', label: '設定', icon: Settings, href: '/settings' },
 ];

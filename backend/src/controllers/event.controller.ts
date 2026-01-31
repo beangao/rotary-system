@@ -31,10 +31,52 @@ export const getEvents = async (req: Request, res: Response, next: NextFunction)
       prisma.event.count({ where }),
     ]);
 
+    // 管理者の場合は出欠サマリーも取得
+    let eventsWithSummary = events;
+    if (user.userType === 'clubAdmin') {
+      // 全会員数を取得
+      const totalMembers = await prisma.member.count({
+        where: {
+          clubId: user.clubId,
+          status: { in: ['active', 'invited'] },
+        },
+      });
+
+      // 各イベントの出欠サマリーを取得
+      const eventIds = events.map(e => e.id);
+      const attendanceCounts = await prisma.attendance.groupBy({
+        by: ['eventId', 'status'],
+        where: { eventId: { in: eventIds } },
+        _count: { status: true },
+      });
+
+      // イベントごとにサマリーをマップ
+      const summaryMap = new Map<string, { attending: number; absent: number; undecided: number }>();
+      for (const event of events) {
+        summaryMap.set(event.id, { attending: 0, absent: 0, undecided: 0 });
+      }
+      for (const count of attendanceCounts) {
+        const summary = summaryMap.get(count.eventId);
+        if (summary) {
+          if (count.status === 'attending') summary.attending = count._count.status;
+          else if (count.status === 'absent') summary.absent = count._count.status;
+          else if (count.status === 'undecided') summary.undecided = count._count.status;
+        }
+      }
+
+      eventsWithSummary = events.map(event => ({
+        ...event,
+        attendanceSummary: {
+          ...summaryMap.get(event.id)!,
+          total: totalMembers,
+        },
+      }));
+    }
+
     res.json({
       success: true,
       data: {
-        events,
+        events: eventsWithSummary,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -109,6 +151,9 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
     const user = req.user as Express.User & { clubId: string };
     const data = req.body as CreateEventInput;
 
+    // statusに応じてisPublishedを設定
+    const isPublished = data.status === 'published';
+
     const event = await prisma.event.create({
       data: {
         clubId: user.clubId,
@@ -121,7 +166,12 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
         venueAddress: data.venueAddress,
         onlineUrl: data.onlineUrl || null,
         responseDeadline: data.responseDeadline ? new Date(data.responseDeadline) : null,
-        isPublished: data.isPublished ?? false,
+        status: data.status || 'draft',
+        isPublished,
+        originalDate: data.originalDate ? new Date(data.originalDate) : null,
+        postponedDate: data.postponedDate ? new Date(data.postponedDate) : null,
+        attachmentUrl: data.attachmentUrl || null,
+        attachmentName: data.attachmentName || null,
       },
     });
 
@@ -149,14 +199,27 @@ export const updateEvent = async (req: Request, res: Response, next: NextFunctio
       throw new AppError('イベントが見つかりません', 404);
     }
 
+    // statusに応じてisPublishedを設定
+    const isPublished = data.status === 'published' ? true : data.status ? false : undefined;
+
     const event = await prisma.event.update({
       where: { id },
       data: {
-        ...data,
+        title: data.title,
+        description: data.description,
+        eventType: data.eventType,
         startAt: data.startAt ? new Date(data.startAt) : undefined,
         endAt: data.endAt ? new Date(data.endAt) : undefined,
-        responseDeadline: data.responseDeadline ? new Date(data.responseDeadline) : undefined,
+        venue: data.venue,
+        venueAddress: data.venueAddress,
         onlineUrl: data.onlineUrl || null,
+        responseDeadline: data.responseDeadline ? new Date(data.responseDeadline) : undefined,
+        status: data.status,
+        isPublished,
+        originalDate: data.originalDate ? new Date(data.originalDate) : undefined,
+        postponedDate: data.postponedDate ? new Date(data.postponedDate) : undefined,
+        attachmentUrl: data.attachmentUrl,
+        attachmentName: data.attachmentName,
       },
     });
 
@@ -210,25 +273,61 @@ export const getAttendances = async (req: Request, res: Response, next: NextFunc
       throw new AppError('イベントが見つかりません', 404);
     }
 
+    // クラブの全会員を取得（出欠回答の有無に関わらず）
+    const members = await prisma.member.findMany({
+      where: {
+        clubId: user.clubId,
+        status: { in: ['active', 'invited'] },
+      },
+      select: {
+        id: true,
+        lastName: true,
+        firstName: true,
+        lastNameKana: true,
+        firstNameKana: true,
+        memberNumber: true,
+        position: true,
+        avatarUrl: true,
+      },
+      orderBy: [
+        { lastNameKana: 'asc' },
+        { firstNameKana: 'asc' },
+      ],
+    });
+
+    // 出欠回答を取得
     const attendances = await prisma.attendance.findMany({
       where: { eventId: id },
-      include: {
+    });
+
+    // 会員リストに出欠情報をマージ
+    const attendanceMap = new Map(attendances.map(a => [a.memberId, a]));
+
+    const membersWithAttendance = members.map(member => {
+      const attendance = attendanceMap.get(member.id);
+      return {
+        id: attendance?.id || null,
+        memberId: member.id,
+        eventId: id,
+        status: attendance?.status || 'none', // none = 未回答
+        comment: attendance?.comment || null,
+        respondedAt: attendance?.updatedAt || null,
         member: {
-          select: {
-            id: true,
-            lastName: true,
-            firstName: true,
-            memberNumber: true,
-            avatarUrl: true,
-          },
+          id: member.id,
+          lastName: member.lastName,
+          firstName: member.firstName,
+          lastNameKana: member.lastNameKana,
+          firstNameKana: member.firstNameKana,
+          memberNumber: member.memberNumber,
+          position: member.position,
+          avatarUrl: member.avatarUrl,
         },
-      },
-      orderBy: { createdAt: 'asc' },
+      };
     });
 
     res.json({
       success: true,
-      data: attendances,
+      data: membersWithAttendance,
     });
   } catch (error) {
     next(error);
@@ -271,6 +370,58 @@ export const upsertAttendance = async (req: Request, res: Response, next: NextFu
         memberId: user.id,
         status: data.status,
         comment: data.comment,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: attendance,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 代理回答（管理者用）
+export const proxyAttendance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = req.user as Express.User & { clubId: string };
+    const { id: eventId, memberId } = req.params;
+    const { status, comment } = req.body;
+
+    const event = await prisma.event.findFirst({
+      where: { id: eventId, clubId: user.clubId },
+    });
+
+    if (!event) {
+      throw new AppError('イベントが見つかりません', 404);
+    }
+
+    // 対象会員が同じクラブに所属しているか確認
+    const member = await prisma.member.findFirst({
+      where: { id: memberId, clubId: user.clubId },
+    });
+
+    if (!member) {
+      throw new AppError('会員が見つかりません', 404);
+    }
+
+    const attendance = await prisma.attendance.upsert({
+      where: {
+        eventId_memberId: {
+          eventId,
+          memberId,
+        },
+      },
+      update: {
+        status,
+        comment,
+      },
+      create: {
+        eventId,
+        memberId,
+        status,
+        comment,
       },
     });
 

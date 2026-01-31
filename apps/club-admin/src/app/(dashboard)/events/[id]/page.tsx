@@ -1,0 +1,584 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Clock,
+  CheckCircle,
+  Upload,
+  X,
+  Eye,
+  Trash2,
+  Users,
+  AlertTriangle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { eventsApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+const eventSchema = z.object({
+  title: z.string().min(1, 'タイトルを入力してください'),
+  eventType: z.enum(['meeting', 'service', 'social', 'district', 'other']),
+  date: z.string().min(1, '開催日を入力してください'),
+  time: z.string().optional(),
+  venue: z.string().min(1, '場所を入力してください'),
+  deadlineDate: z.string().optional(),
+  description: z.string().optional(),
+  status: z.enum(['draft', 'published', 'closed', 'cancelled', 'postponed']),
+});
+
+type EventFormData = z.infer<typeof eventSchema>;
+
+// イベント種別の設定
+const EVENT_TYPES = [
+  { key: 'meeting', label: '定例会', color: 'bg-blue-600' },
+  { key: 'service', label: '奉仕活動', color: 'bg-green-600' },
+  { key: 'social', label: '親睦活動', color: 'bg-purple-600' },
+  { key: 'district', label: '地区行事', color: 'bg-amber-600' },
+  { key: 'other', label: 'その他', color: 'bg-gray-600' },
+];
+
+// ステータスの設定
+const STATUS_OPTIONS = [
+  { value: 'draft', label: '下書き', color: 'bg-gray-100 text-gray-700 border-gray-300' },
+  { value: 'published', label: '公開中', color: 'bg-green-100 text-green-700 border-green-300' },
+  { value: 'closed', label: '終了', color: 'bg-gray-100 text-gray-600 border-gray-300' },
+  { value: 'cancelled', label: '中止', color: 'bg-red-100 text-red-700 border-red-300' },
+  { value: 'postponed', label: '延期', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+];
+
+const getCategoryInfo = (category: string) => {
+  const config: Record<string, { label: string; color: string; bgColor: string }> = {
+    meeting: { label: '定例会', color: 'text-blue-700', bgColor: 'bg-blue-100' },
+    service: { label: '奉仕活動', color: 'text-green-700', bgColor: 'bg-green-100' },
+    social: { label: '親睦活動', color: 'text-purple-700', bgColor: 'bg-purple-100' },
+    district: { label: '地区行事', color: 'text-amber-700', bgColor: 'bg-amber-100' },
+    other: { label: 'その他', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+  };
+  return config[category] || config.other;
+};
+
+export default function EventDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [attachment, setAttachment] = useState<string | null>(null);
+  const [attendanceSummary, setAttendanceSummary] = useState<{ attending: number; absent: number; undecided: number } | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<EventFormData>({
+    resolver: zodResolver(eventSchema),
+    defaultValues: {
+      status: 'draft',
+      eventType: 'meeting',
+    },
+  });
+
+  const watchedValues = watch();
+
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        const response = await eventsApi.getById(id);
+        if (response.data.success) {
+          const event = response.data.data;
+          const startAt = new Date(event.startAt);
+          const responseDeadline = event.responseDeadline ? new Date(event.responseDeadline) : null;
+
+          reset({
+            title: event.title,
+            description: event.description || '',
+            eventType: event.eventType || 'meeting',
+            date: startAt.toISOString().split('T')[0],
+            time: startAt.toTimeString().slice(0, 5),
+            venue: event.venue || '',
+            deadlineDate: responseDeadline ? responseDeadline.toISOString().split('T')[0] : '',
+            status: event.status || 'draft',
+          });
+
+          if (event.attachmentName) {
+            setAttachment(event.attachmentName);
+          }
+
+          if (event.attendanceSummary) {
+            setAttendanceSummary(event.attendanceSummary);
+          }
+        }
+      } catch (err) {
+        setError('イベントの取得に失敗しました');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEvent();
+  }, [id, reset]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAttachment(file.name);
+    }
+  };
+
+  const onSubmit = async (data: EventFormData) => {
+    setError('');
+    try {
+      const startAt = data.time
+        ? new Date(`${data.date}T${data.time}`).toISOString()
+        : new Date(`${data.date}T00:00:00`).toISOString();
+
+      const response = await eventsApi.update(id, {
+        title: data.title,
+        description: data.description || null,
+        eventType: data.eventType,
+        startAt,
+        venue: data.venue,
+        responseDeadline: data.deadlineDate ? new Date(`${data.deadlineDate}T23:59:59`).toISOString() : null,
+        status: data.status,
+      });
+
+      if (response.data.success) {
+        router.push('/events');
+      } else {
+        setError(response.data.error || 'イベントの更新に失敗しました');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'イベントの更新に失敗しました');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const response = await eventsApi.delete(id);
+      if (response.data.success) {
+        router.push('/events');
+      } else {
+        setError(response.data.error || 'イベントの削除に失敗しました');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'イベントの削除に失敗しました');
+    }
+  };
+
+  const categoryInfo = getCategoryInfo(watchedValues.eventType);
+  const currentStatus = STATUS_OPTIONS.find(s => s.value === watchedValues.status);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ヘッダー */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/events">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Calendar className="h-7 w-7 text-blue-600" />
+              イベント編集
+            </h1>
+            <p className="text-gray-600 mt-1">イベント情報を編集してください</p>
+          </div>
+        </div>
+        <Link href={`/events/${id}/attendances`}>
+          <Button variant="outline" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            出欠確認
+            {attendanceSummary && (
+              <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                {attendanceSummary.attending}/{attendanceSummary.attending + attendanceSummary.absent + attendanceSummary.undecided}
+              </span>
+            )}
+          </Button>
+        </Link>
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 左側: 入力フォーム */}
+        <Card className="p-6 space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-blue-100 pb-3">
+            <h3 className="text-xl font-bold text-gray-900">イベント情報</h3>
+            {currentStatus && (
+              <span className={cn('px-3 py-1 rounded-full text-xs font-semibold border', currentStatus.color)}>
+                {currentStatus.label}
+              </span>
+            )}
+          </div>
+
+          {/* ステータス変更 */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              ステータス
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setValue('status', option.value as EventFormData['status'])}
+                  className={cn(
+                    'px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all',
+                    watchedValues.status === option.value
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  )}
+                >
+                  <span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold border', option.color)}>
+                    {option.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* イベント名 */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              イベント名 <span className="text-red-500">*</span>
+            </label>
+            <Input
+              placeholder="例：3月度定例会"
+              {...register('title')}
+              error={errors.title?.message}
+            />
+          </div>
+
+          {/* 種別 */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              種別 <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {EVENT_TYPES.map((type) => (
+                <button
+                  key={type.key}
+                  type="button"
+                  onClick={() => setValue('eventType', type.key as EventFormData['eventType'])}
+                  className={cn(
+                    'p-4 rounded-xl border-2 transition-all',
+                    watchedValues.eventType === type.key
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  )}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={cn('w-8 h-8 rounded-full', type.color)} />
+                    <span className="text-sm font-semibold text-gray-900">{type.label}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 開催日時 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                開催日 <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="date"
+                {...register('date')}
+                error={errors.date?.message}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                開催時間
+              </label>
+              <Input type="time" {...register('time')} />
+            </div>
+          </div>
+
+          {/* 場所 */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              場所 <span className="text-red-500">*</span>
+            </label>
+            <Input
+              placeholder="例：ホテルオークラ神戸 34階 メイフェア"
+              {...register('venue')}
+              error={errors.venue?.message}
+            />
+          </div>
+
+          {/* 回答期限 */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              回答期限
+            </label>
+            <Input type="date" {...register('deadlineDate')} />
+          </div>
+
+          {/* 詳細・備考 */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              詳細・備考
+            </label>
+            <Textarea
+              placeholder="卓話者、プログラム内容、注意事項など"
+              className="min-h-[150px]"
+              {...register('description')}
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              改行は自動的に反映されます
+            </p>
+          </div>
+
+          {/* 添付ファイル */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              添付ファイル
+            </label>
+            {attachment ? (
+              <div className="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Upload className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{attachment}</p>
+                      <p className="text-xs text-gray-500">添付ファイル</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAttachment(null)}
+                    className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                  >
+                    <X className="h-5 w-5 text-gray-500 hover:text-red-600" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                <input
+                  type="file"
+                  id="file-upload"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label htmlFor="file-upload" className="flex flex-col items-center gap-2 cursor-pointer">
+                  <Upload className="h-8 w-8 text-gray-400" />
+                  <p className="text-sm text-gray-600">ファイルを選択またはドラッグ&ドロップ</p>
+                  <p className="text-xs text-gray-400">PDF, 画像ファイル (最大5MB)</p>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* アクションボタン */}
+          <div className="pt-6 border-t-2 border-gray-100 space-y-3">
+            <Button
+              type="button"
+              onClick={handleSubmit(onSubmit)}
+              isLoading={isSubmitting}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              <CheckCircle className="h-5 w-5" />
+              変更
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex-1 py-3 text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                削除
+              </Button>
+              <Link href="/events" className="flex-1">
+                <Button type="button" variant="outline" className="w-full py-3">
+                  キャンセル
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        {/* 右側: プレビュー */}
+        <div className="hidden lg:block">
+          <Card className="p-6 sticky top-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">プレビュー</h3>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Eye className="h-4 w-4" />
+                <span>スマホアプリ表示</span>
+              </div>
+            </div>
+
+            {/* スマホフレーム */}
+            <div className="mx-auto" style={{ width: '375px' }}>
+              <div className="bg-gray-900 rounded-3xl p-3 shadow-2xl">
+                <div className="bg-white rounded-2xl overflow-hidden" style={{ height: '667px' }}>
+                  {/* ヘッダー */}
+                  <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-5 py-6 text-white">
+                    <h2 className="text-xl font-bold mb-2">尼崎西ロータリークラブ</h2>
+                    <p className="text-blue-100 text-sm">イベント詳細</p>
+                  </div>
+
+                  {/* イベントカード */}
+                  <div className="p-4 overflow-y-auto" style={{ height: 'calc(667px - 88px)' }}>
+                    {watchedValues.title || watchedValues.description ? (
+                      <div className={cn('bg-white rounded-2xl shadow-lg border-2 overflow-hidden', categoryInfo.bgColor)}>
+                        {/* カテゴリーバー */}
+                        <div className={cn('h-2', EVENT_TYPES.find(t => t.key === watchedValues.eventType)?.color || 'bg-gray-600')} />
+
+                        <div className="p-5 space-y-4">
+                          {/* ステータスバッジ（公開中以外） */}
+                          {watchedValues.status !== 'published' && currentStatus && (
+                            <span className={cn('inline-flex px-3 py-1 rounded-full text-xs font-semibold border', currentStatus.color)}>
+                              {currentStatus.label}
+                            </span>
+                          )}
+
+                          {/* カテゴリーラベル */}
+                          <span className={cn('inline-flex px-3 py-1 rounded-full text-xs font-semibold', categoryInfo.bgColor, categoryInfo.color)}>
+                            {categoryInfo.label}
+                          </span>
+
+                          {/* イベント名 */}
+                          <h3 className="text-xl font-bold text-gray-900 leading-snug">
+                            {watchedValues.title || 'イベント名を入力してください'}
+                          </h3>
+
+                          {/* 日時 */}
+                          {(watchedValues.date || watchedValues.time) && (
+                            <div className="flex items-center gap-2 text-blue-900">
+                              <Calendar className="h-4 w-4" />
+                              <p className="text-sm font-semibold">
+                                {watchedValues.date || '日付未設定'} {watchedValues.time && `${watchedValues.time}〜`}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 場所 */}
+                          {watchedValues.venue && (
+                            <div className="flex items-start gap-2 text-gray-700">
+                              <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm">{watchedValues.venue}</p>
+                            </div>
+                          )}
+
+                          {/* 詳細 */}
+                          {watchedValues.description && (
+                            <div className="bg-blue-50 rounded-lg px-4 py-3 mt-3">
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                {watchedValues.description}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 回答期限 */}
+                          {watchedValues.deadlineDate && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3 inline-block">
+                              <p className="text-xs text-amber-800 font-semibold">
+                                回答期限：{watchedValues.deadlineDate}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 出欠回答ボタン（プレビュー用） */}
+                          <div className="space-y-2 pt-2">
+                            <p className="text-base font-bold text-gray-900">出欠のご回答</p>
+                            <button className="w-full py-3 bg-green-600 text-white rounded-xl font-bold text-base">
+                              出席
+                            </button>
+                            <button className="w-full py-3 bg-red-600 text-white rounded-xl font-bold text-base">
+                              欠席
+                            </button>
+                            <button className="w-full py-3 bg-gray-600 text-white rounded-xl font-bold text-base">
+                              未定
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-400">
+                        <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">
+                          イベント情報を入力すると<br />プレビューが表示されます
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* 削除確認モーダル */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-100 rounded-full">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                イベントを削除しますか？
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              この操作は取り消せません。関連する出欠データもすべて削除されます。
+            </p>
+            <div className="flex justify-end gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                削除する
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

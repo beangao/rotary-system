@@ -57,13 +57,15 @@ export const membersApi = {
 
 // Events API
 export const eventsApi = {
-  getAll: (params?: { upcoming?: boolean; page?: number; limit?: number }) =>
+  getAll: (params?: { upcoming?: boolean; page?: number; limit?: number; status?: string; category?: string; dateFrom?: string; dateTo?: string }) =>
     api.get('/events', { params }),
   getById: (id: string) => api.get(`/events/${id}`),
   create: (data: Record<string, unknown>) => api.post('/events', data),
   update: (id: string, data: Record<string, unknown>) => api.put(`/events/${id}`, data),
   delete: (id: string) => api.delete(`/events/${id}`),
   getAttendances: (id: string) => api.get(`/events/${id}/attendances`),
+  proxyAttendance: (eventId: string, memberId: string, data: { status: string; comment?: string }) =>
+    api.put(`/events/${eventId}/attendances/${memberId}`, data),
 };
 
 // Notifications API
@@ -74,4 +76,19 @@ export const notificationsApi = {
   create: (data: Record<string, unknown>) => api.post('/notifications', data),
   update: (id: string, data: Record<string, unknown>) => api.put(`/notifications/${id}`, data),
   delete: (id: string) => api.delete(`/notifications/${id}`),
+};
+
+// Club API
+export const clubApi = {
+  get: () => api.get('/club'),
+  update: (data: Record<string, unknown>) => api.put('/club', data),
+};
+
+// Admins API
+export const adminsApi = {
+  getAll: () => api.get('/admins'),
+  getById: (id: string) => api.get(`/admins/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/admins', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/admins/${id}`, data),
+  delete: (id: string) => api.delete(`/admins/${id}`),
 };
