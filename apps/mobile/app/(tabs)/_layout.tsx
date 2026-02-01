@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Users, Calendar, Bell, User } from 'lucide-react-native';
 
 // SVGアイコンコンポーネント
@@ -24,6 +25,9 @@ const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
 };
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 60 + insets.bottom;
+
   return (
     <Tabs
       screenOptions={{
@@ -39,14 +43,15 @@ export default function TabsLayout() {
           borderTopWidth: 1,
           borderTopColor: '#e5e7eb',
           paddingTop: 8,
-          paddingBottom: 8,
-          height: 60,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          height: tabBarHeight,
         },
         tabBarActiveTintColor: '#1e3a8a',
         tabBarInactiveTintColor: '#9ca3af',
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
+          marginBottom: Platform.OS === 'ios' ? 0 : 4,
         },
       }}
     >

@@ -23,10 +23,15 @@
 - members.tsx の残存絵文字アイコンを SVG に置換（🔍→Search, ⚙️→Filter）
 - events.tsx infoText スタイルに marginLeft 追加（アイコンとの間隔調整）
 - 未使用の emoji 関連スタイルを削除
+- タブバーのラベル切れ問題を修正（useSafeAreaInsets で safe area 対応）
 
 #### 変更ファイル
 - `apps/mobile/app/(tabs)/events.tsx`
 - `apps/mobile/app/(tabs)/members.tsx`
+- `apps/mobile/app/(tabs)/_layout.tsx`
+
+#### コミット
+- `refactor: Replace remaining emoji icons with Lucide SVG in events and members screens`
 
 ---
 
