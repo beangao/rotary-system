@@ -37,6 +37,47 @@
 - バックエンドAPIレスポンス変更時はフロントエンドの型も更新
 - Prismaエラー発生時のみキャッシュクリア: `rm -rf node_modules/.prisma && npx prisma generate`
 
+### フィールド名の統一（Backend ↔ Frontend）
+
+**重要:** バックエンドとフロントエンド間でフィールド名を統一すること。名前の不一致はバグの原因となる。
+
+#### 命名規則
+
+| レイヤー | 形式 | 例 |
+|---------|------|-----|
+| DB (Prisma) | snake_case | `join_date`, `phone_number` |
+| Prisma Model | camelCase | `joinDate`, `phoneNumber` |
+| API Response | camelCase | `joinDate`, `phoneNumber` |
+| Frontend | camelCase | `joinDate`, `phoneNumber` |
+
+#### 禁止パターン
+
+- **同じ概念に異なる名前を使用しない**
+  - ❌ Backend: `department` / Frontend: `jobTitle`
+  - ❌ Backend: `introduction` / Frontend: `bio`
+  - ✅ 統一: `jobTitle` または `department` のどちらかに統一
+
+#### 新規フィールド追加時のチェックリスト
+
+1. [ ] Prismaスキーマにフィールドを追加
+2. [ ] `npx prisma generate` を実行
+3. [ ] バックエンドAPIレスポンスにフィールドを追加
+4. [ ] フロントエンド型定義を更新 (`types/index.ts` など)
+5. [ ] **フィールド名が全レイヤーで一致していることを確認**
+
+#### 既存のフィールドマッピング（参照用）
+
+現在のDB ↔ UIフィールドマッピング:
+
+| DB (Prisma) | API/UI |
+|-------------|--------|
+| `industryClassification` | `classification` |
+| `department` | `jobTitle` |
+| `phoneNumber` | `phone` |
+| `introduction` | `bio` |
+
+**注意:** 上記のマッピングは既存の互換性のため残っているが、新規開発時は名前を統一すること。
+
 ### 禁止コマンド
 
 以下のコマンドは**使用禁止**（データ消失・履歴破壊のリスク）
