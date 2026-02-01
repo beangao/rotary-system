@@ -437,6 +437,8 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
           companyName: member.companyName,
           jobTitle: member.department,
           phone: member.phoneNumber,
+          hometown: member.hometown,
+          school: member.school,
           hobbies: member.hobbies,
           bio: member.introduction,
           club: member.club,

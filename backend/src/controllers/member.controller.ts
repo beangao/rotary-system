@@ -20,6 +20,8 @@ const mapMemberToResponse = (member: any) => ({
   companyName: member.companyName,
   jobTitle: member.department, // DB: department → UI: jobTitle
   phone: member.phoneNumber,
+  hometown: member.hometown,
+  school: member.school,
   hobbies: member.hobbies,
   bio: member.introduction, // DB: introduction → UI: bio
   // その他
@@ -413,6 +415,8 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         companyName: data.companyName,
         department: data.jobTitle, // UI: jobTitle → DB: department
         phoneNumber: data.phone,
+        hometown: data.hometown,
+        school: data.school,
         hobbies: data.hobbies || undefined, // 文字列として保存
         introduction: data.bio, // UI: bio → DB: introduction
         privacySettings: data.privacySettings ? JSON.stringify(data.privacySettings) : undefined,
@@ -440,6 +444,8 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         companyName: member.companyName,
         jobTitle: member.department,
         phone: member.phoneNumber,
+        hometown: member.hometown,
+        school: member.school,
         hobbies: member.hobbies,
         bio: member.introduction,
         club: member.club,

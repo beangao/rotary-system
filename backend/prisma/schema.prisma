@@ -95,8 +95,10 @@ model Member {
   department             String?   @db.VarChar(100)
   phoneNumber            String?   @map("phone_number") @db.VarChar(20)
   avatarUrl              String?   @map("avatar_url") @db.VarChar(500)
-  hobbies                String?   @db.Text // JSON array
-  introduction           String?   @db.Text
+  hometown               String?   @db.VarChar(100) // 出身地
+  school                 String?   @db.VarChar(200) // 出身校
+  hobbies                String?   @db.Text // 趣味・特技
+  introduction           String?   @db.Text // 自己紹介
 
   // プライバシー設定
   privacySettings        String?   @map("privacy_settings") @db.Text // JSON
