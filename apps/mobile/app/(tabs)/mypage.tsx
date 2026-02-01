@@ -148,9 +148,9 @@ export default function MyPageScreen() {
           </View>
 
           <View style={styles.infoGrid}>
-            <InfoRow label="職業分類" value={user?.classification || '未設定'} />
+            <InfoRow label="職業分類" value={user?.industryClassification || '未設定'} />
             <InfoRow label="会社名" value={user?.companyName || '未設定'} />
-            <InfoRow label="役職" value={user?.jobTitle || '未設定'} />
+            <InfoRow label="部署・役職" value={user?.department || '未設定'} />
           </View>
         </View>
 
@@ -167,7 +167,7 @@ export default function MyPageScreen() {
           </View>
 
           <View style={styles.infoGrid}>
-            <InfoRow label="電話番号" value={user?.phone || '未設定'} />
+            <InfoRow label="電話番号" value={user?.phoneNumber || '未設定'} />
             <InfoRow label="メールアドレス" value={user?.email || '未設定'} />
           </View>
         </View>
@@ -190,13 +190,13 @@ export default function MyPageScreen() {
             <InfoRowWithIcon icon="heart" label="趣味・特技" value={user?.hobbies || '未設定'} />
           </View>
 
-          {user?.bio && (
+          {user?.introduction && (
             <View style={styles.bioSection}>
               <View style={styles.bioHeader}>
                 <FileText size={16} color="#6b7280" strokeWidth={2} style={styles.bioIconStyle} />
                 <Text style={styles.bioLabel}>自己紹介</Text>
               </View>
-              <Text style={styles.bioText}>{user.bio}</Text>
+              <Text style={styles.bioText}>{user.introduction}</Text>
             </View>
           )}
         </View>
@@ -333,28 +333,28 @@ const ProfileEditModal = ({
   onSave: (data: any) => void;
 }) => {
   const [profileData, setProfileData] = useState({
-    classification: '',
+    industryClassification: '',
     companyName: '',
-    jobTitle: '',
-    phone: '',
+    department: '',
+    phoneNumber: '',
     hometown: '',
     school: '',
     hobbies: '',
-    bio: '',
+    introduction: '',
   });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
       setProfileData({
-        classification: user.classification || '',
+        industryClassification: user.industryClassification || '',
         companyName: user.companyName || '',
-        jobTitle: user.jobTitle || '',
-        phone: user.phone || '',
+        department: user.department || '',
+        phoneNumber: user.phoneNumber || '',
         hometown: user.hometown || '',
         school: user.school || '',
         hobbies: user.hobbies || '',
-        bio: user.bio || '',
+        introduction: user.introduction || '',
       });
     }
   }, [user, visible]);
@@ -401,8 +401,8 @@ const ProfileEditModal = ({
               <Text style={styles.editFieldLabel}>職業分類</Text>
               <TextInput
                 style={styles.editInput}
-                value={profileData.classification}
-                onChangeText={(text) => setProfileData({ ...profileData, classification: text })}
+                value={profileData.industryClassification}
+                onChangeText={(text) => setProfileData({ ...profileData, industryClassification: text })}
                 placeholder="例：IT・通信業"
                 placeholderTextColor="#9ca3af"
               />
@@ -420,11 +420,11 @@ const ProfileEditModal = ({
             </View>
 
             <View style={styles.editFieldCard}>
-              <Text style={styles.editFieldLabel}>役職</Text>
+              <Text style={styles.editFieldLabel}>部署・役職</Text>
               <TextInput
                 style={styles.editInput}
-                value={profileData.jobTitle}
-                onChangeText={(text) => setProfileData({ ...profileData, jobTitle: text })}
+                value={profileData.department}
+                onChangeText={(text) => setProfileData({ ...profileData, department: text })}
                 placeholder="例：営業部長"
                 placeholderTextColor="#9ca3af"
               />
@@ -439,8 +439,8 @@ const ProfileEditModal = ({
               <Text style={styles.editFieldLabel}>電話番号</Text>
               <TextInput
                 style={styles.editInput}
-                value={profileData.phone}
-                onChangeText={(text) => setProfileData({ ...profileData, phone: text })}
+                value={profileData.phoneNumber}
+                onChangeText={(text) => setProfileData({ ...profileData, phoneNumber: text })}
                 placeholder="例：090-1234-5678"
                 placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
@@ -501,8 +501,8 @@ const ProfileEditModal = ({
               </View>
               <TextInput
                 style={[styles.editInput, styles.editTextArea]}
-                value={profileData.bio}
-                onChangeText={(text) => setProfileData({ ...profileData, bio: text })}
+                value={profileData.introduction}
+                onChangeText={(text) => setProfileData({ ...profileData, introduction: text })}
                 placeholder="自己紹介文を入力してください"
                 placeholderTextColor="#9ca3af"
                 multiline

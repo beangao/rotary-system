@@ -1,4 +1,4 @@
-// ユーザー情報
+// ユーザー情報（Prismaフィールド名と統一）
 export interface User {
   id: string;
   email: string;
@@ -12,13 +12,22 @@ export interface User {
   avatarUrl: string | null;
   status: 'invited' | 'active' | 'inactive' | 'withdrawn';
   profileCompleted: boolean;
+  // 編集可能フィールド
+  industryClassification: string | null;
+  companyName: string | null;
+  department: string | null;
+  phoneNumber: string | null;
+  hometown: string | null;
+  school: string | null;
+  hobbies: string | null;
+  introduction: string | null;
   club: {
     id: string;
     name: string;
   };
 }
 
-// 会員情報
+// 会員情報（Prismaフィールド名と統一）
 export interface Member {
   id: string;
   email: string;
@@ -29,12 +38,14 @@ export interface Member {
   firstNameKana: string | null;
   position: string | null;
   joinDate: string | null;
-  classification: string | null;
+  industryClassification: string | null;
   companyName: string | null;
   department: string | null;
-  phone: string | null;
+  phoneNumber: string | null;
+  hometown: string | null;
+  school: string | null;
   avatarUrl: string | null;
-  hobbies: string[];
+  hobbies: string | null;
   introduction: string | null;
   status: string;
 }

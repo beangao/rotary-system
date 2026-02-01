@@ -54,22 +54,22 @@ export const updateMemberSchema = z.object({
   }),
 });
 
-// プロフィール更新スキーマ（会員用）
+// プロフィール更新スキーマ（会員用）- Prismaフィールド名を使用
 export const updateProfileSchema = z.object({
   body: z.object({
     // 職業・事業所情報
-    classification: z.string().optional().nullable(),
+    industryClassification: z.string().optional().nullable(),
     companyName: z.string().optional().nullable(),
-    jobTitle: z.string().optional().nullable(), // UI名: jobTitle → DB名: department
+    department: z.string().optional().nullable(),
 
     // 連絡先
-    phone: z.string().optional().nullable(),
+    phoneNumber: z.string().optional().nullable(),
 
     // パーソナル情報
     hometown: z.string().optional().nullable(),
     school: z.string().optional().nullable(),
-    hobbies: z.string().optional().nullable(), // 文字列として受け取る
-    bio: z.string().optional().nullable(), // UI名: bio → DB名: introduction
+    hobbies: z.string().optional().nullable(),
+    introduction: z.string().optional().nullable(),
 
     // プライバシー設定
     privacySettings: z.object({

@@ -4,7 +4,7 @@ import { AppError } from '../middlewares/error-handler';
 import { sendInvitationEmail } from '../services/email.service';
 import { CreateMemberInput, UpdateMemberInput, UpdateProfileInput } from '../validators/member.validator';
 
-// DBからUIへのフィールド名変換
+// DBフィールド名をそのまま使用（マッピング不要）
 const mapMemberToResponse = (member: any) => ({
   id: member.id,
   email: member.email,
@@ -15,15 +15,15 @@ const mapMemberToResponse = (member: any) => ({
   firstNameKana: member.firstNameKana,
   position: member.position,
   joinDate: member.joinDate,
-  // UIフィールド名にマッピング
-  classification: member.industryClassification,
+  // Prismaフィールド名をそのまま使用
+  industryClassification: member.industryClassification,
   companyName: member.companyName,
-  jobTitle: member.department, // DB: department → UI: jobTitle
-  phone: member.phoneNumber,
+  department: member.department,
+  phoneNumber: member.phoneNumber,
   hometown: member.hometown,
   school: member.school,
   hobbies: member.hobbies,
-  bio: member.introduction, // DB: introduction → UI: bio
+  introduction: member.introduction,
   // その他
   status: member.status,
   avatarUrl: member.avatarUrl,
@@ -410,15 +410,15 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     const member = await prisma.member.update({
       where: { id: user.id },
       data: {
-        // UIフィールド名からDBフィールド名にマッピング
-        industryClassification: data.classification,
+        // Prismaフィールド名をそのまま使用
+        industryClassification: data.industryClassification,
         companyName: data.companyName,
-        department: data.jobTitle, // UI: jobTitle → DB: department
-        phoneNumber: data.phone,
+        department: data.department,
+        phoneNumber: data.phoneNumber,
         hometown: data.hometown,
         school: data.school,
-        hobbies: data.hobbies || undefined, // 文字列として保存
-        introduction: data.bio, // UI: bio → DB: introduction
+        hobbies: data.hobbies || undefined,
+        introduction: data.introduction,
         privacySettings: data.privacySettings ? JSON.stringify(data.privacySettings) : undefined,
         profileCompleted: true,
       },
@@ -439,15 +439,15 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         joinDate: member.joinDate,
         avatarUrl: member.avatarUrl,
         profileCompleted: member.profileCompleted,
-        // 編集可能フィールド（UIフィールド名にマッピング）
-        classification: member.industryClassification,
+        // Prismaフィールド名をそのまま使用
+        industryClassification: member.industryClassification,
         companyName: member.companyName,
-        jobTitle: member.department,
-        phone: member.phoneNumber,
+        department: member.department,
+        phoneNumber: member.phoneNumber,
         hometown: member.hometown,
         school: member.school,
         hobbies: member.hobbies,
-        bio: member.introduction,
+        introduction: member.introduction,
         club: member.club,
         userType: 'member',
       },

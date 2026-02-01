@@ -65,18 +65,22 @@
 4. [ ] フロントエンド型定義を更新 (`types/index.ts` など)
 5. [ ] **フィールド名が全レイヤーで一致していることを確認**
 
-#### 既存のフィールドマッピング（参照用）
+#### 統一されたフィールド名
 
-現在のDB ↔ UIフィールドマッピング:
+以下のPrismaフィールド名を全レイヤーで使用すること:
 
-| DB (Prisma) | API/UI |
-|-------------|--------|
-| `industryClassification` | `classification` |
-| `department` | `jobTitle` |
-| `phoneNumber` | `phone` |
-| `introduction` | `bio` |
+| フィールド | 用途 |
+|-----------|------|
+| `industryClassification` | 職業分類 |
+| `companyName` | 会社名 |
+| `department` | 部署・役職 |
+| `phoneNumber` | 電話番号 |
+| `hometown` | 出身地 |
+| `school` | 出身校 |
+| `hobbies` | 趣味・特技 |
+| `introduction` | 自己紹介 |
 
-**注意:** 上記のマッピングは既存の互換性のため残っているが、新規開発時は名前を統一すること。
+**注意:** フィールド名の変換・マッピングは行わない。Prismaスキーマの名前をそのまま使用すること。
 
 ### 禁止コマンド
 
