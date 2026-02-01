@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
-import { Check, ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -21,7 +21,6 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const handleSendCode = async () => {
     if (!email) {
@@ -39,9 +38,13 @@ export default function ForgotPasswordScreen() {
     setError(null);
 
     try {
-      const response = await api.sendVerificationCode(email);
+      const response = await api.sendResetCode(email);
       if (response.success) {
-        setSuccess(true);
+        // コード入力画面へ遷移（mode=reset）
+        router.push({
+          pathname: '/(auth)/verify-code',
+          params: { email, mode: 'reset' },
+        });
       } else {
         setError(response.error || 'メールの送信に失敗しました');
       }
@@ -52,31 +55,6 @@ export default function ForgotPasswordScreen() {
       setIsLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={[styles.successContent, { paddingTop: insets.top }]}>
-          <View style={styles.successIcon}>
-            <Check size={48} color="#16a34a" strokeWidth={3} />
-          </View>
-          <Text style={styles.successTitle}>メールを送信しました</Text>
-          <Text style={styles.successDescription}>
-            {email} にパスワード再設定用の{'\n'}
-            メールを送信しました。{'\n'}
-            メールに記載された手順に従って{'\n'}
-            パスワードを再設定してください。
-          </Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.replace('/(auth)/login')}
-          >
-            <Text style={styles.buttonText}>ログイン画面に戻る</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -233,38 +211,5 @@ const styles = StyleSheet.create({
   linkContent: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  // 成功画面
-  successContent: {
-    flex: 1,
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#22c55e',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  successIconText: {
-    fontSize: 40,
-    color: '#ffffff',
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1e3a8a',
-    marginBottom: 16,
-  },
-  successDescription: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
   },
 });

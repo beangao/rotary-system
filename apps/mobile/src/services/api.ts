@@ -149,6 +149,18 @@ class ApiService {
     return response.data;
   }
 
+  // パスワードリセット用コード送信（既存ユーザー向け）
+  async sendResetCode(email: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.post('/auth/reset/send-code', { email });
+    return response.data;
+  }
+
+  // パスワードリセット
+  async resetPassword(email: string, code: string, password: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.post('/auth/reset/password', { email, code, password });
+    return response.data;
+  }
+
   // ============================================
   // 会員 API
   // ============================================

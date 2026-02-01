@@ -68,11 +68,20 @@ export default function VerifyCodeScreen() {
     try {
       const response = await api.verifyCode(email, codeString);
       if (response.success) {
-        // パスワード設定画面へ遷移
-        router.push({
-          pathname: '/(auth)/set-password',
-          params: { email, code: codeString },
-        });
+        // モードに応じて遷移先を変更
+        if (mode === 'reset') {
+          // パスワードリセット画面へ遷移
+          router.push({
+            pathname: '/(auth)/reset-password',
+            params: { email, code: codeString },
+          });
+        } else {
+          // 新規登録：パスワード設定画面へ遷移
+          router.push({
+            pathname: '/(auth)/set-password',
+            params: { email, code: codeString },
+          });
+        }
       } else {
         setError('認証コードが正しくありません');
         setCode(['', '', '', '', '', '']);
@@ -94,7 +103,10 @@ export default function VerifyCodeScreen() {
     setCode(['', '', '', '', '', '']);
 
     try {
-      const response = await api.sendVerificationCode(email);
+      // モードに応じてAPIを切り替え
+      const response = mode === 'reset'
+        ? await api.sendResetCode(email)
+        : await api.sendVerificationCode(email);
       if (response.success) {
         inputRefs.current[0]?.focus();
       } else {
