@@ -36,12 +36,15 @@ export default function HomeScreen() {
 
   const fetchData = async () => {
     try {
-      // イベントを取得
-      const eventsResponse = await api.getEvents({ status: 'published' });
+      // イベントを取得（将来の公開中イベントのみ、開始日時順）
+      const eventsResponse = await api.getEvents({ upcoming: 'true' });
       if (eventsResponse.success && eventsResponse.data?.events?.length > 0) {
         const upcomingEvent = eventsResponse.data.events[0];
         setNextEvent(upcomingEvent);
         setAttendanceStatus(upcomingEvent.myAttendance?.status || null);
+      } else {
+        setNextEvent(null);
+        setAttendanceStatus(null);
       }
 
       // お知らせを取得
@@ -163,12 +166,12 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* 次回例会 */}
+        {/* 次回のイベント・例会 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <Calendar size={20} color="#1e3a8a" strokeWidth={2} style={styles.sectionIconStyle} />
-              <Text style={styles.sectionTitle}>次回例会</Text>
+              <Text style={styles.sectionTitle}>次回のイベント・例会</Text>
             </View>
           </View>
 
@@ -278,7 +281,7 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.emptyEvent}>
               <Calendar size={40} color="#9ca3af" strokeWidth={1.5} />
-              <Text style={styles.emptyText}>予定されている例会はありません</Text>
+              <Text style={styles.emptyText}>予定されているイベント・例会はありません</Text>
             </View>
           )}
         </View>

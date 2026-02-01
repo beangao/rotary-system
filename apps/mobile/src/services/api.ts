@@ -188,7 +188,7 @@ class ApiService {
   // ============================================
 
   // イベント一覧取得
-  async getEvents(params?: { status?: string }): Promise<ApiResponse<{ events: Event[] }>> {
+  async getEvents(params?: { status?: string; upcoming?: string }): Promise<ApiResponse<{ events: Event[] }>> {
     const response = await this.client.get('/events', { params });
     return response.data;
   }
