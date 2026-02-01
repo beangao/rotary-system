@@ -170,14 +170,16 @@ export const getMemberById = async (req: Request, res: Response, next: NextFunct
           joinDate: member.joinDate,
           gender: member.gender,
           birthDate: member.birthDate,
-          // UIフィールド名にマッピング
-          classification: member.industryClassification,
+          // Prismaフィールド名をそのまま使用
+          industryClassification: member.industryClassification,
           companyName: member.companyName,
           department: member.department,
-          phone: member.phoneNumber,
+          phoneNumber: member.phoneNumber,
+          hometown: member.hometown,
+          school: member.school,
           // その他
           avatarUrl: member.avatarUrl,
-          hobbies: member.hobbies ? JSON.parse(member.hobbies) : [],
+          hobbies: member.hobbies,
           introduction: member.introduction,
           privacySettings,
           status: member.status,
@@ -203,14 +205,16 @@ export const getMemberById = async (req: Request, res: Response, next: NextFunct
         memberNumber: member.memberNumber,
         position: member.position,
         avatarUrl: member.avatarUrl,
-        hobbies: member.hobbies ? JSON.parse(member.hobbies) : [],
+        hobbies: member.hobbies,
         introduction: member.introduction,
         email: privacySettings.showEmail ? member.email : null,
-        phone: privacySettings.showPhone ? member.phoneNumber : null,
+        phoneNumber: privacySettings.showPhone ? member.phoneNumber : null,
         birthDate: privacySettings.showBirthDate ? member.birthDate : null,
         companyName: privacySettings.showCompany ? member.companyName : null,
         department: privacySettings.showCompany ? member.department : null,
-        classification: privacySettings.showCompany ? member.industryClassification : null,
+        industryClassification: privacySettings.showCompany ? member.industryClassification : null,
+        hometown: member.hometown,
+        school: member.school,
         club: member.club,
       },
     });
@@ -266,11 +270,11 @@ export const createMember = async (req: Request, res: Response, next: NextFuncti
         firstNameKana: data.firstNameKana,
         position: data.position,
         joinDate: data.joinDate ? new Date(data.joinDate) : null,
-        // UIフィールド名からDBフィールド名にマッピング
-        industryClassification: data.classification || null,
+        // Prismaフィールド名をそのまま使用
+        industryClassification: data.industryClassification || null,
         companyName: data.companyName || null,
         department: data.department || null,
-        phoneNumber: data.phone,
+        phoneNumber: data.phoneNumber,
         status: 'invited',
       },
     });
@@ -342,7 +346,7 @@ export const updateMember = async (req: Request, res: Response, next: NextFuncti
       }
     }
 
-    // 更新データの構築（UIフィールド名からDBフィールド名にマッピング）
+    // 更新データの構築（Prismaフィールド名をそのまま使用）
     const updateData: any = {};
 
     if (data.email !== undefined) updateData.email = data.email.toLowerCase();
@@ -353,10 +357,10 @@ export const updateMember = async (req: Request, res: Response, next: NextFuncti
     if (data.firstNameKana !== undefined) updateData.firstNameKana = data.firstNameKana;
     if (data.position !== undefined) updateData.position = data.position;
     if (data.joinDate !== undefined) updateData.joinDate = data.joinDate ? new Date(data.joinDate) : null;
-    if (data.classification !== undefined) updateData.industryClassification = data.classification;
+    if (data.industryClassification !== undefined) updateData.industryClassification = data.industryClassification;
     if (data.companyName !== undefined) updateData.companyName = data.companyName;
     if (data.department !== undefined) updateData.department = data.department;
-    if (data.phone !== undefined) updateData.phoneNumber = data.phone;
+    if (data.phoneNumber !== undefined) updateData.phoneNumber = data.phoneNumber;
     if (data.status !== undefined) updateData.status = data.status;
 
     const member = await prisma.member.update({

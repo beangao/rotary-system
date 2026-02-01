@@ -21,12 +21,12 @@ const memberSchema = z.object({
   lastNameKana: z.string().min(1, '姓（ふりがな）を入力してください'),
   firstNameKana: z.string().min(1, '名（ふりがな）を入力してください'),
   position: z.string().min(1, '役職を選択してください'),
-  // 2. 職業・事業所情報
-  classification: z.string().optional(),
+  // 2. 職業・事業所情報（Prismaフィールド名）
+  industryClassification: z.string().optional(),
   companyName: z.string().optional(),
   department: z.string().optional(),
-  // 3. 連絡先
-  phone: z.string().min(1, '電話番号を入力してください'),
+  // 3. 連絡先（Prismaフィールド名）
+  phoneNumber: z.string().min(1, '電話番号を入力してください'),
   email: z.string().email('正しいメールアドレスを入力してください'),
   // ステータス
   status: z.enum(['invited', 'active', 'inactive', 'withdrawn']).optional(),
@@ -103,10 +103,10 @@ export default function MemberDetailPage() {
             lastNameKana: member.lastNameKana || '',
             firstNameKana: member.firstNameKana || '',
             position: member.position || '',
-            classification: member.classification || '',
+            industryClassification: member.industryClassification || '',
             companyName: member.companyName || '',
             department: member.department || '',
-            phone: member.phone || '',
+            phoneNumber: member.phoneNumber || '',
             email: member.email,
             status: member.status,
           });
@@ -353,7 +353,7 @@ export default function MemberDetailPage() {
               <label className="block text-sm font-bold text-gray-700 mb-2">職業分類</label>
               <select
                 className="w-full h-12 px-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                {...register('classification')}
+                {...register('industryClassification')}
               >
                 <option value="">選択してください</option>
                 {CLASSIFICATION_OPTIONS.map((classification) => (
@@ -397,9 +397,9 @@ export default function MemberDetailPage() {
               </label>
               <Input
                 type="tel"
-                {...register('phone')}
+                {...register('phoneNumber')}
                 placeholder="090-1234-5678"
-                error={errors.phone?.message}
+                error={errors.phoneNumber?.message}
               />
             </div>
 

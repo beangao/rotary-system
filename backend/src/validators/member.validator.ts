@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// 会員作成スキーマ（管理者用）
+// 会員作成スキーマ（管理者用）- Prismaフィールド名を使用
 export const createMemberSchema = z.object({
   body: z.object({
     // 1. ロータリー基本情報（必須）
@@ -12,20 +12,20 @@ export const createMemberSchema = z.object({
     firstNameKana: z.string({ required_error: '名（ふりがな）を入力してください' }).min(1, '名（ふりがな）を入力してください'),
     position: z.string({ required_error: '役職を選択してください' }).min(1, '役職を選択してください'),
 
-    // 2. 職業・事業所情報（任意）
-    classification: z.string().optional().nullable(),
+    // 2. 職業・事業所情報（任意）- Prismaフィールド名
+    industryClassification: z.string().optional().nullable(),
     companyName: z.string().optional().nullable(),
     department: z.string().optional().nullable(),
 
-    // 3. 連絡先（必須）
-    phone: z.string({ required_error: '電話番号を入力してください' }).min(1, '電話番号を入力してください'),
+    // 3. 連絡先（必須）- Prismaフィールド名
+    phoneNumber: z.string({ required_error: '電話番号を入力してください' }).min(1, '電話番号を入力してください'),
     email: z
       .string({ required_error: 'メールアドレスを入力してください' })
       .email('正しいメールアドレスを入力してください'),
   }),
 });
 
-// 会員更新スキーマ（管理者用）
+// 会員更新スキーマ（管理者用）- Prismaフィールド名を使用
 export const updateMemberSchema = z.object({
   params: z.object({
     id: z.string(),
@@ -40,13 +40,13 @@ export const updateMemberSchema = z.object({
     firstNameKana: z.string().optional().nullable(),
     position: z.string().optional().nullable(),
 
-    // 2. 職業・事業所情報
-    classification: z.string().optional().nullable(),
+    // 2. 職業・事業所情報 - Prismaフィールド名
+    industryClassification: z.string().optional().nullable(),
     companyName: z.string().optional().nullable(),
     department: z.string().optional().nullable(),
 
-    // 3. 連絡先
-    phone: z.string().optional().nullable(),
+    // 3. 連絡先 - Prismaフィールド名
+    phoneNumber: z.string().optional().nullable(),
     email: z.string().email('正しいメールアドレスを入力してください').optional(),
 
     // ステータス
