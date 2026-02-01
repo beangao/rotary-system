@@ -60,14 +60,18 @@ export const updateProfileSchema = z.object({
     // 職業・事業所情報
     classification: z.string().optional().nullable(),
     companyName: z.string().optional().nullable(),
-    department: z.string().optional().nullable(),
+    jobTitle: z.string().optional().nullable(), // UI名: jobTitle → DB名: department
 
     // 連絡先
     phone: z.string().optional().nullable(),
 
-    // その他
-    hobbies: z.array(z.string()).optional(),
-    introduction: z.string().optional().nullable(),
+    // パーソナル情報
+    hometown: z.string().optional().nullable(),
+    school: z.string().optional().nullable(),
+    hobbies: z.string().optional().nullable(), // 文字列として受け取る
+    bio: z.string().optional().nullable(), // UI名: bio → DB名: introduction
+
+    // プライバシー設定
     privacySettings: z.object({
       showEmail: z.boolean().optional(),
       showPhone: z.boolean().optional(),

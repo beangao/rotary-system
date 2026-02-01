@@ -18,8 +18,10 @@ const mapMemberToResponse = (member: any) => ({
   // UIフィールド名にマッピング
   classification: member.industryClassification,
   companyName: member.companyName,
-  department: member.department,
+  jobTitle: member.department, // DB: department → UI: jobTitle
   phone: member.phoneNumber,
+  hobbies: member.hobbies,
+  bio: member.introduction, // DB: introduction → UI: bio
   // その他
   status: member.status,
   avatarUrl: member.avatarUrl,
@@ -409,21 +411,39 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         // UIフィールド名からDBフィールド名にマッピング
         industryClassification: data.classification,
         companyName: data.companyName,
-        department: data.department,
+        department: data.jobTitle, // UI: jobTitle → DB: department
         phoneNumber: data.phone,
-        hobbies: data.hobbies ? JSON.stringify(data.hobbies) : undefined,
-        introduction: data.introduction,
+        hobbies: data.hobbies || undefined, // 文字列として保存
+        introduction: data.bio, // UI: bio → DB: introduction
         privacySettings: data.privacySettings ? JSON.stringify(data.privacySettings) : undefined,
         profileCompleted: true,
       },
+      include: { club: { select: { id: true, name: true } } },
     });
 
     res.json({
       success: true,
       data: {
-        ...mapMemberToResponse(member),
-        hobbies: member.hobbies ? JSON.parse(member.hobbies) : [],
-        privacySettings: member.privacySettings ? JSON.parse(member.privacySettings) : null,
+        id: member.id,
+        email: member.email,
+        lastName: member.lastName,
+        firstName: member.firstName,
+        lastNameKana: member.lastNameKana,
+        firstNameKana: member.firstNameKana,
+        memberNumber: member.memberNumber,
+        position: member.position,
+        joinDate: member.joinDate,
+        avatarUrl: member.avatarUrl,
+        profileCompleted: member.profileCompleted,
+        // 編集可能フィールド（UIフィールド名にマッピング）
+        classification: member.industryClassification,
+        companyName: member.companyName,
+        jobTitle: member.department,
+        phone: member.phoneNumber,
+        hobbies: member.hobbies,
+        bio: member.introduction,
+        club: member.club,
+        userType: 'member',
       },
     });
   } catch (error) {
