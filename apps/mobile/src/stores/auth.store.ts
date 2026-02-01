@@ -81,11 +81,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await api.login(email, password);
       if (response.success && response.data) {
-        set({
-          user: response.data.user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
+        // ログイン成功後、getMeで完全なユーザーデータを取得
+        const meResponse = await api.getMe();
+        if (meResponse.success && meResponse.data) {
+          set({
+            user: meResponse.data,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } else {
+          // getMeが失敗した場合はログインレスポンスのデータを使用
+          set({
+            user: response.data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        }
         return true;
       } else {
         set({ error: response.error || 'ログインに失敗しました', isLoading: false });
