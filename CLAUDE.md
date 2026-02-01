@@ -295,6 +295,12 @@ chore: その他
 - ファイルアップロードは5MB制限
 - 画像は自動リサイズ（アバター: 200x200）
 
+## 作業履歴
+
+- [WORKLOG.md](./WORKLOG.md) - 作業履歴・次にやることを管理
+- `/start-work` - 作業開始時に実行（git pull、前回の確認、今日のタスク提案）
+- `/end-work` - 作業終了時に実行（作業内容をWORKLOG.mdに記録）
+
 ## 開発ルール
 
 開発する際は必ず [CONTRIBUTING.md](./CONTRIBUTING.md) を参照し、以下のルールを遵守すること：
