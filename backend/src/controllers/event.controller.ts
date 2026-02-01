@@ -15,24 +15,44 @@ export const getEvents = async (req: Request, res: Response, next: NextFunction)
 
     const where = {
       clubId: user.clubId,
-      // 会員の場合は公開済みのみ
-      ...(user.userType === 'member' && { isPublished: true }),
-      // upcoming=true の場合は今後のイベントのみ
-      ...(upcoming === 'true' && { startAt: { gte: new Date() } }),
+      // upcoming=true の場合は公開中かつ今後のイベントのみ（ホーム画面用）
+      ...(upcoming === 'true'
+        ? { status: 'published', startAt: { gte: new Date() } }
+        // 会員の場合は下書き以外すべて表示（イベント一覧画面用）
+        : user.userType === 'member' && { status: { not: 'draft' } }),
     };
 
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
-        orderBy: { startAt: 'asc' },
+        // upcoming=true: 直近順（昇順）、それ以外: 最新順（降順）
+        orderBy: { startAt: upcoming === 'true' ? 'asc' : 'desc' },
         skip,
         take: limitNum,
       }),
       prisma.event.count({ where }),
     ]);
 
+    // 会員の場合は自分の出欠情報を取得
+    let eventsWithAttendance: any[] = events;
+    if (user.userType === 'member') {
+      const eventIds = events.map(e => e.id);
+      const myAttendances = await prisma.attendance.findMany({
+        where: {
+          eventId: { in: eventIds },
+          memberId: (user as any).id,
+        },
+      });
+
+      const attendanceMap = new Map(myAttendances.map(a => [a.eventId, a]));
+
+      eventsWithAttendance = events.map(event => ({
+        ...event,
+        myAttendance: attendanceMap.get(event.id) || null,
+      }));
+    }
+
     // 管理者の場合は出欠サマリーも取得
-    let eventsWithSummary = events;
     if (user.userType === 'clubAdmin') {
       // 全会員数を取得
       const totalMembers = await prisma.member.count({
@@ -64,7 +84,7 @@ export const getEvents = async (req: Request, res: Response, next: NextFunction)
         }
       }
 
-      eventsWithSummary = events.map(event => ({
+      eventsWithAttendance = events.map(event => ({
         ...event,
         attendanceSummary: {
           ...summaryMap.get(event.id)!,
@@ -76,7 +96,7 @@ export const getEvents = async (req: Request, res: Response, next: NextFunction)
     res.json({
       success: true,
       data: {
-        events: eventsWithSummary,
+        events: eventsWithAttendance,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -100,7 +120,8 @@ export const getEventById = async (req: Request, res: Response, next: NextFuncti
       where: {
         id,
         clubId: user.clubId,
-        ...(user.userType === 'member' && { isPublished: true }),
+        // 会員の場合は下書き以外すべて表示
+        ...(user.userType === 'member' && { status: { not: 'draft' } }),
       },
     });
 
@@ -202,6 +223,13 @@ export const updateEvent = async (req: Request, res: Response, next: NextFunctio
     // statusに応じてisPublishedを設定
     const isPublished = data.status === 'published' ? true : data.status ? false : undefined;
 
+    // responseDeadlineが明示的にnullとして渡された場合はクリアする
+    const responseDeadline = data.responseDeadline === null
+      ? null
+      : data.responseDeadline
+        ? new Date(data.responseDeadline)
+        : undefined;
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -213,7 +241,7 @@ export const updateEvent = async (req: Request, res: Response, next: NextFunctio
         venue: data.venue,
         venueAddress: data.venueAddress,
         onlineUrl: data.onlineUrl || null,
-        responseDeadline: data.responseDeadline ? new Date(data.responseDeadline) : undefined,
+        responseDeadline,
         status: data.status,
         isPublished,
         originalDate: data.originalDate ? new Date(data.originalDate) : undefined,
@@ -342,11 +370,16 @@ export const upsertAttendance = async (req: Request, res: Response, next: NextFu
     const data = req.body as AttendanceInput;
 
     const event = await prisma.event.findFirst({
-      where: { id: eventId, clubId: user.clubId, isPublished: true },
+      where: { id: eventId, clubId: user.clubId, status: { not: 'draft' } },
     });
 
     if (!event) {
       throw new AppError('イベントが見つかりません', 404);
+    }
+
+    // 公開中のイベントのみ回答可能
+    if (event.status !== 'published') {
+      throw new AppError('このイベントは出欠回答を受け付けていません', 400);
     }
 
     // 回答期限チェック

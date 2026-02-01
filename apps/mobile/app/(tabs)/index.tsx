@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -7,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,7 +20,6 @@ import {
   Bell,
   Calendar,
   MapPin,
-  MessageSquare,
   Check,
   Users,
   ChevronRight,
@@ -60,9 +61,11 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -77,9 +80,13 @@ export default function HomeScreen() {
       const response = await api.submitAttendance(nextEvent.id, status);
       if (response.success) {
         setAttendanceStatus(status);
+      } else {
+        Alert.alert('エラー', response.error || '出欠の登録に失敗しました');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to submit attendance:', error);
+      const message = error?.response?.data?.error || error?.message || '出欠の登録に失敗しました';
+      Alert.alert('エラー', message);
     } finally {
       setIsSubmittingAttendance(false);
     }
@@ -99,6 +106,16 @@ export default function HomeScreen() {
     const date = new Date(dateString);
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
+
+  const isDeadlinePassed = (deadlineString?: string | null) => {
+    if (!deadlineString) return false;
+    return new Date() > new Date(deadlineString);
+  };
+
+  // 回答可能かどうかの判定（公開中かつ期限内のみ）
+  const canSubmitAttendance = nextEvent &&
+    nextEvent.status === 'published' &&
+    !isDeadlinePassed(nextEvent.responseDeadline);
 
   if (isLoading) {
     return (
@@ -209,16 +226,10 @@ export default function HomeScreen() {
                 )}
               </LinearGradient>
 
-              {/* 卓話情報（あれば） */}
+              {/* イベント詳細（あれば） */}
               {nextEvent.description && (
-                <View style={styles.talkSection}>
-                  <View style={styles.talkRow}>
-                    <MessageSquare size={18} color="#1e3a8a" strokeWidth={2} style={styles.talkIconStyle} />
-                    <View style={styles.talkContent}>
-                      <Text style={styles.talkLabel}>卓話・内容</Text>
-                      <Text style={styles.talkDescription}>{nextEvent.description}</Text>
-                    </View>
-                  </View>
+                <View style={styles.descriptionSection}>
+                  <Text style={styles.descriptionText}>{nextEvent.description}</Text>
                 </View>
               )}
 
@@ -234,15 +245,17 @@ export default function HomeScreen() {
                         回答済み: {attendanceStatus === 'attending' ? '出席' : attendanceStatus === 'absent' ? '欠席' : '未定'}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => setAttendanceStatus(null)}
-                      disabled={isSubmittingAttendance}
-                    >
-                      <Text style={styles.changeButton}>回答を変更する</Text>
-                    </TouchableOpacity>
+                    {canSubmitAttendance && (
+                      <TouchableOpacity
+                        onPress={() => setAttendanceStatus(null)}
+                        disabled={isSubmittingAttendance}
+                      >
+                        <Text style={styles.changeButton}>回答を変更する</Text>
+                      </TouchableOpacity>
+                    )}
                     <Text style={styles.thankYouText}>ご回答ありがとうございます</Text>
                   </View>
-                ) : (
+                ) : canSubmitAttendance ? (
                   <View style={styles.attendanceButtons}>
                     <TouchableOpacity
                       style={[styles.attendanceButton, styles.attendButton]}
@@ -274,6 +287,22 @@ export default function HomeScreen() {
                     >
                       <Text style={styles.undecidedButtonText}>未定</Text>
                     </TouchableOpacity>
+                  </View>
+                ) : nextEvent.status === 'cancelled' ? (
+                  <View style={styles.expiredNotice}>
+                    <Text style={styles.cancelledNoticeText}>このイベントは中止になりました</Text>
+                  </View>
+                ) : nextEvent.status === 'postponed' ? (
+                  <View style={styles.expiredNotice}>
+                    <Text style={styles.postponedNoticeText}>このイベントは延期になりました</Text>
+                  </View>
+                ) : nextEvent.status === 'closed' ? (
+                  <View style={styles.expiredNotice}>
+                    <Text style={styles.expiredNoticeText}>出欠回答は締め切られました</Text>
+                  </View>
+                ) : (
+                  <View style={styles.expiredNotice}>
+                    <Text style={styles.expiredNoticeText}>回答期限が過ぎています</Text>
                   </View>
                 )}
               </View>
@@ -509,32 +538,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
   },
-  talkSection: {
-    backgroundColor: '#dbeafe',
+  descriptionSection: {
     padding: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: '#93c5fd',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  talkRow: {
-    flexDirection: 'row',
+  descriptionText: {
+    fontSize: 15,
+    color: '#374151',
+    lineHeight: 22,
   },
-  talkIconStyle: {
-    marginRight: 8,
-    marginTop: 2,
-  },
-  talkContent: {
-    flex: 1,
-  },
-  talkLabel: {
-    fontSize: 14,
-    color: '#1e40af',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  talkDescription: {
-    fontSize: 16,
-    color: '#1e3a8a',
-    lineHeight: 24,
   },
   // Attendance
   attendanceSection: {
@@ -610,6 +623,26 @@ const styles = StyleSheet.create({
   thankYouText: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  expiredNotice: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  expiredNoticeText: {
+    color: '#6b7280',
+    fontSize: 16,
+  },
+  cancelledNoticeText: {
+    color: '#dc2626',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  postponedNoticeText: {
+    color: '#d97706',
+    fontSize: 16,
+    fontWeight: '600',
   },
   // Quick Access
   quickAccessButton: {

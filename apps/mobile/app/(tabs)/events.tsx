@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -7,13 +8,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Modal,
-  ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
 import { Event } from '../../src/types';
-import { Calendar, MapPin, ChevronLeft, ChevronRight, Check, Clock } from 'lucide-react-native';
+import { Calendar, MapPin, Check } from 'lucide-react-native';
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   meeting: '定例会',
@@ -23,42 +23,43 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   other: 'その他',
 };
 
+// デザイン仕様に合わせたカテゴリスタイル
 const getCategoryStyle = (eventType: string) => {
   switch (eventType) {
     case 'meeting':
       return {
-        badgeColor: '#dbeafe',
-        textColor: '#1e40af',
-        cardBg: '#eff6ff',
-        borderColor: '#bfdbfe',
+        badgeColor: '#dbeafe', // bg-blue-100
+        textColor: '#1e40af', // text-blue-800
+        cardBg: '#eff6ff', // bg-blue-50
+        borderColor: '#bfdbfe', // border-blue-200
       };
     case 'service':
       return {
-        badgeColor: '#dcfce7',
-        textColor: '#166534',
-        cardBg: '#f0fdf4',
-        borderColor: '#bbf7d0',
+        badgeColor: '#dcfce7', // bg-green-100
+        textColor: '#166534', // text-green-800
+        cardBg: '#f0fdf4', // bg-green-50
+        borderColor: '#bbf7d0', // border-green-200
       };
     case 'social':
       return {
-        badgeColor: '#f3e8ff',
-        textColor: '#7c3aed',
-        cardBg: '#faf5ff',
-        borderColor: '#e9d5ff',
+        badgeColor: '#f3e8ff', // bg-purple-100
+        textColor: '#6b21a8', // text-purple-800
+        cardBg: '#faf5ff', // bg-purple-50
+        borderColor: '#e9d5ff', // border-purple-200
       };
     case 'district':
       return {
-        badgeColor: '#fef3c7',
-        textColor: '#92400e',
-        cardBg: '#fffbeb',
-        borderColor: '#fde68a',
+        badgeColor: '#fef3c7', // bg-amber-100
+        textColor: '#92400e', // text-amber-800
+        cardBg: '#fffbeb', // bg-amber-50
+        borderColor: '#fde68a', // border-amber-200
       };
     default:
       return {
-        badgeColor: '#f3f4f6',
-        textColor: '#4b5563',
-        cardBg: '#ffffff',
-        borderColor: '#e5e7eb',
+        badgeColor: '#f3f4f6', // bg-gray-100
+        textColor: '#1f2937', // text-gray-800
+        cardBg: '#f9fafb', // bg-gray-50
+        borderColor: '#e5e7eb', // border-gray-200
       };
   }
 };
@@ -67,7 +68,6 @@ export default function EventsScreen() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchEvents = async () => {
@@ -84,9 +84,11 @@ export default function EventsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchEvents();
+    }, [])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -133,7 +135,7 @@ export default function EventsScreen() {
     return new Date() > new Date(deadlineString);
   };
 
-  const handleAttendance = async (eventId: string, status: 'attending' | 'absent') => {
+  const handleAttendance = async (eventId: string, status: 'attending' | 'absent' | 'undecided') => {
     setIsSubmitting(true);
     try {
       const response = await api.submitAttendance(eventId, status);
@@ -145,48 +147,75 @@ export default function EventsScreen() {
               : e
           )
         );
-        if (selectedEvent?.id === eventId) {
-          setSelectedEvent((prev) =>
-            prev ? { ...prev, myAttendance: { ...prev.myAttendance, status } } : null
-          );
-        }
+      } else {
+        Alert.alert('エラー', response.error || '出欠の登録に失敗しました');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to submit attendance:', error);
+      const message = error?.response?.data?.error || error?.message || '出欠の登録に失敗しました';
+      Alert.alert('エラー', message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // イベントステータスのラベル
+  const EVENT_STATUS_LABELS: Record<string, { text: string; bgColor: string; textColor: string }> = {
+    cancelled: { text: '中止', bgColor: '#dc2626', textColor: '#ffffff' }, // bg-red-600
+    postponed: { text: '延期', bgColor: '#f59e0b', textColor: '#ffffff' }, // bg-amber-500
+    closed: { text: '締切', bgColor: '#6b7280', textColor: '#ffffff' }, // bg-gray-500
+  };
+
+  // デザイン仕様に合わせたステータスバッジ
   const getStatusBadge = (event: Event) => {
+    // イベントが中止/延期/締切の場合はそれを表示
+    if (event.status !== 'published') {
+      const statusInfo = EVENT_STATUS_LABELS[event.status];
+      if (statusInfo) {
+        return { ...statusInfo, showCheck: false };
+      }
+    }
+
     const attendance = event.myAttendance?.status;
     const deadlinePassed = isDeadlinePassed(event.responseDeadline);
 
     if (attendance === 'attending') {
-      return { text: '出席', bgColor: '#22c55e', textColor: '#ffffff' };
+      return { text: '出席', bgColor: '#22c55e', textColor: '#ffffff', showCheck: true }; // bg-green-500
     }
     if (attendance === 'absent') {
-      return { text: '欠席', bgColor: '#ef4444', textColor: '#ffffff' };
+      return { text: '欠席', bgColor: '#ef4444', textColor: '#ffffff', showCheck: false }; // bg-red-500
+    }
+    if (attendance === 'undecided') {
+      return { text: '未定', bgColor: '#eab308', textColor: '#ffffff', showCheck: false }; // bg-yellow-500
     }
     if (deadlinePassed) {
-      return { text: '期限切れ', bgColor: '#d1d5db', textColor: '#6b7280' };
+      return { text: '期限切れ', bgColor: '#d1d5db', textColor: '#4b5563', showCheck: false }; // bg-gray-300 text-gray-600
     }
-    return { text: '未回答', bgColor: '#9ca3af', textColor: '#ffffff' };
+    return { text: '未回答', bgColor: '#9ca3af', textColor: '#ffffff', showCheck: false }; // bg-gray-400
+  };
+
+  // 出欠回答が可能かどうか
+  const canSubmitAttendance = (event: Event) => {
+    // 公開中のイベントのみ回答可能
+    if (event.status !== 'published') return false;
+    // 期限切れの場合は回答不可
+    if (isDeadlinePassed(event.responseDeadline)) return false;
+    return true;
   };
 
   const renderEvent = ({ item }: { item: Event }) => {
     const categoryStyle = getCategoryStyle(item.eventType);
     const statusBadge = getStatusBadge(item);
     const deadlinePassed = isDeadlinePassed(item.responseDeadline);
+    const userResponse = item.myAttendance?.status;
+    const canRespond = canSubmitAttendance(item);
 
     return (
-      <TouchableOpacity
+      <View
         style={[
           styles.eventCard,
           { backgroundColor: categoryStyle.cardBg, borderColor: categoryStyle.borderColor },
         ]}
-        onPress={() => setSelectedEvent(item)}
-        activeOpacity={0.7}
       >
         {/* ヘッダー: カテゴリとステータス */}
         <View style={styles.cardHeader}>
@@ -196,6 +225,9 @@ export default function EventsScreen() {
             </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusBadge.bgColor }]}>
+            {statusBadge.showCheck && (
+              <Check size={14} color="#ffffff" strokeWidth={3} style={styles.statusCheckIcon} />
+            )}
             <Text style={[styles.statusText, { color: statusBadge.textColor }]}>
               {statusBadge.text}
             </Text>
@@ -205,48 +237,48 @@ export default function EventsScreen() {
         {/* タイトル */}
         <Text style={styles.eventTitle}>{item.title}</Text>
 
-        {/* 日時・場所 */}
-        <View style={styles.eventInfoRow}>
-          <Calendar size={16} color="#6b7280" strokeWidth={2} />
-          <Text style={styles.infoText}>{formatDate(item.startAt)}</Text>
-        </View>
-        <View style={styles.eventInfoRow}>
-          <Clock size={16} color="#6b7280" strokeWidth={2} />
-          <Text style={styles.infoText}>{formatTimeRange(item.startAt, item.endAt)}</Text>
-        </View>
-        {item.venue && (
+        {/* 日時・時間・場所 */}
+        <View style={styles.eventInfoSection}>
           <View style={styles.eventInfoRow}>
-            <MapPin size={16} color="#6b7280" strokeWidth={2} />
-            <Text style={styles.infoText}>{item.venue}</Text>
+            <Calendar size={20} color="#1e3a8a" strokeWidth={2} />
+            <Text style={styles.infoTextBold}>{formatDate(item.startAt)}</Text>
           </View>
-        )}
+          <View style={styles.eventInfoRow}>
+            <Calendar size={20} color="#1e3a8a" strokeWidth={2} />
+            <Text style={styles.infoText}>{formatTimeRange(item.startAt, item.endAt)}</Text>
+          </View>
+          {item.venue && (
+            <View style={styles.eventInfoRow}>
+              <MapPin size={20} color="#1e3a8a" strokeWidth={2} />
+              <Text style={styles.infoText}>{item.venue}</Text>
+            </View>
+          )}
+        </View>
 
         {/* 説明 */}
         {item.description && (
-          <Text style={styles.eventDescription} numberOfLines={2}>
+          <Text style={styles.eventDescription}>
             {item.description}
           </Text>
         )}
 
         {/* 回答期限 */}
         {item.responseDeadline && (
-          <View style={styles.deadlineContainer}>
-            <Text style={[styles.deadlineText, deadlinePassed && styles.deadlinePassed]}>
-              回答期限：{formatDeadline(item.responseDeadline)}
-              {deadlinePassed && '（期限切れ）'}
-            </Text>
-          </View>
+          <Text style={[styles.deadlineText, deadlinePassed && styles.deadlineTextPassed]}>
+            回答期限：{formatDeadline(item.responseDeadline)}
+            {deadlinePassed && <Text style={styles.deadlineExpiredText}>（期限切れ）</Text>}
+          </Text>
         )}
 
-        {/* 出欠ボタン（期限内のみ） */}
-        {!deadlinePassed && (
+        {/* 出欠ボタン（公開中かつ期限内のみ） */}
+        {canRespond && (
           <View style={styles.attendanceSection}>
             <Text style={styles.attendanceLabel}>出欠のご回答</Text>
             <View style={styles.attendanceButtons}>
               <TouchableOpacity
                 style={[
                   styles.attendanceButton,
-                  item.myAttendance?.status === 'attending' && styles.attendingButton,
+                  userResponse === 'attending' && styles.attendingButtonActive,
                 ]}
                 onPress={() => handleAttendance(item.id, 'attending')}
                 disabled={isSubmitting}
@@ -254,7 +286,7 @@ export default function EventsScreen() {
                 <Text
                   style={[
                     styles.attendanceButtonText,
-                    item.myAttendance?.status === 'attending' && styles.attendingButtonText,
+                    userResponse === 'attending' && styles.attendingButtonTextActive,
                   ]}
                 >
                   出席
@@ -263,7 +295,7 @@ export default function EventsScreen() {
               <TouchableOpacity
                 style={[
                   styles.attendanceButton,
-                  item.myAttendance?.status === 'absent' && styles.absentButton,
+                  userResponse === 'absent' && styles.absentButtonActive,
                 ]}
                 onPress={() => handleAttendance(item.id, 'absent')}
                 disabled={isSubmitting}
@@ -271,189 +303,55 @@ export default function EventsScreen() {
                 <Text
                   style={[
                     styles.attendanceButtonText,
-                    item.myAttendance?.status === 'absent' && styles.absentButtonText,
+                    userResponse === 'absent' && styles.absentButtonTextActive,
                   ]}
                 >
                   欠席
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.attendanceButton,
+                  userResponse === 'undecided' && styles.undecidedButtonActive,
+                ]}
+                onPress={() => handleAttendance(item.id, 'undecided')}
+                disabled={isSubmitting}
+              >
+                <Text
+                  style={[
+                    styles.attendanceButtonText,
+                    userResponse === 'undecided' && styles.undecidedButtonTextActive,
+                  ]}
+                >
+                  未定
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {deadlinePassed && !item.myAttendance?.status && (
+        {/* ステータスメッセージ */}
+        {!canRespond && item.status === 'published' && deadlinePassed && !userResponse && (
           <View style={styles.expiredNotice}>
             <Text style={styles.expiredNoticeText}>回答期限が過ぎています</Text>
           </View>
         )}
-      </TouchableOpacity>
-    );
-  };
-
-  // 詳細モーダル
-  const renderDetailModal = () => {
-    if (!selectedEvent) return null;
-
-    const categoryStyle = getCategoryStyle(selectedEvent.eventType);
-    const statusBadge = getStatusBadge(selectedEvent);
-    const deadlinePassed = isDeadlinePassed(selectedEvent.responseDeadline);
-
-    return (
-      <Modal
-        visible={!!selectedEvent}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setSelectedEvent(null)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          {/* ヘッダー */}
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              style={styles.modalBackButton}
-              onPress={() => setSelectedEvent(null)}
-            >
-              <ChevronLeft size={24} color="#374151" strokeWidth={2} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>イベント詳細</Text>
-            <View style={styles.modalHeaderSpacer} />
+        {item.status === 'cancelled' && (
+          <View style={styles.expiredNotice}>
+            <Text style={styles.cancelledNoticeText}>このイベントは中止になりました</Text>
           </View>
-
-          <ScrollView style={styles.modalContent}>
-            {/* カテゴリとステータス */}
-            <View style={styles.cardHeader}>
-              <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.badgeColor }]}>
-                <Text style={[styles.categoryText, { color: categoryStyle.textColor }]}>
-                  {EVENT_TYPE_LABELS[selectedEvent.eventType] || selectedEvent.eventType}
-                </Text>
-              </View>
-              <View style={[styles.statusBadge, { backgroundColor: statusBadge.bgColor }]}>
-                <Text style={[styles.statusText, { color: statusBadge.textColor }]}>
-                  {statusBadge.text}
-                </Text>
-              </View>
-            </View>
-
-            {/* タイトル */}
-            <Text style={styles.modalEventTitle}>{selectedEvent.title}</Text>
-
-            {/* イベント情報カード */}
-            <View style={styles.infoCard}>
-              <View style={styles.infoCardRow}>
-                <Calendar size={18} color="#1e3a8a" strokeWidth={2} />
-                <View>
-                  <Text style={styles.infoCardLabel}>日時</Text>
-                  <Text style={styles.infoCardValue}>{formatDate(selectedEvent.startAt)}</Text>
-                  <Text style={styles.infoCardValue}>
-                    {formatTimeRange(selectedEvent.startAt, selectedEvent.endAt)}
-                  </Text>
-                </View>
-              </View>
-
-              {selectedEvent.venue && (
-                <View style={styles.infoCardRow}>
-                  <MapPin size={18} color="#1e3a8a" strokeWidth={2} />
-                  <View>
-                    <Text style={styles.infoCardLabel}>場所</Text>
-                    <Text style={styles.infoCardValue}>{selectedEvent.venue}</Text>
-                  </View>
-                </View>
-              )}
-
-              {selectedEvent.responseDeadline && (
-                <View style={styles.infoCardRow}>
-                  <Clock size={18} color="#1e3a8a" strokeWidth={2} style={styles.infoCardIconStyle} />
-                  <View>
-                    <Text style={styles.infoCardLabel}>回答期限</Text>
-                    <Text
-                      style={[
-                        styles.infoCardValue,
-                        deadlinePassed && styles.infoCardValueExpired,
-                      ]}
-                    >
-                      {formatDeadline(selectedEvent.responseDeadline)}
-                      {deadlinePassed && '（期限切れ）'}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-
-            {/* 説明 */}
-            {selectedEvent.description && (
-              <View style={styles.descriptionCard}>
-                <Text style={styles.descriptionTitle}>詳細</Text>
-                <Text style={styles.descriptionText}>{selectedEvent.description}</Text>
-              </View>
-            )}
-
-            {/* 出欠ボタン */}
-            {!deadlinePassed && (
-              <View style={styles.modalAttendanceSection}>
-                <Text style={styles.modalAttendanceLabel}>出欠のご回答</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.modalAttendanceButton,
-                    selectedEvent.myAttendance?.status === 'attending'
-                      ? styles.modalAttendingButtonActive
-                      : styles.modalAttendingButton,
-                  ]}
-                  onPress={() => handleAttendance(selectedEvent.id, 'attending')}
-                  disabled={isSubmitting}
-                >
-                  {selectedEvent.myAttendance?.status === 'attending' && (
-                    <Check size={18} color="#ffffff" strokeWidth={2.5} />
-                  )}
-                  <Text
-                    style={[
-                      styles.modalAttendanceButtonText,
-                      selectedEvent.myAttendance?.status === 'attending' &&
-                        styles.modalAttendingButtonTextActive,
-                    ]}
-                  >
-                    出席
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.modalAttendanceButton,
-                    selectedEvent.myAttendance?.status === 'absent'
-                      ? styles.modalAbsentButtonActive
-                      : styles.modalAbsentButton,
-                  ]}
-                  onPress={() => handleAttendance(selectedEvent.id, 'absent')}
-                  disabled={isSubmitting}
-                >
-                  {selectedEvent.myAttendance?.status === 'absent' && (
-                    <Check size={18} color="#ffffff" strokeWidth={2.5} />
-                  )}
-                  <Text
-                    style={[
-                      styles.modalAttendanceButtonText,
-                      selectedEvent.myAttendance?.status === 'absent' &&
-                        styles.modalAbsentButtonTextActive,
-                    ]}
-                  >
-                    欠席
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {deadlinePassed && !selectedEvent.myAttendance?.status && (
-              <View style={styles.modalExpiredNotice}>
-                <Text style={styles.modalExpiredNoticeText}>回答期限が過ぎています</Text>
-              </View>
-            )}
-
-            {selectedEvent.myAttendance?.status && (
-              <View style={styles.thankYouMessage}>
-                <Check size={24} color="#1e3a8a" strokeWidth={2.5} />
-                <Text style={styles.thankYouText}>ご回答ありがとうございます</Text>
-              </View>
-            )}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+        )}
+        {item.status === 'postponed' && (
+          <View style={styles.expiredNotice}>
+            <Text style={styles.postponedNoticeText}>このイベントは延期になりました</Text>
+          </View>
+        )}
+        {item.status === 'closed' && (
+          <View style={styles.expiredNotice}>
+            <Text style={styles.expiredNoticeText}>出欠回答は締め切られました</Text>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -484,7 +382,6 @@ export default function EventsScreen() {
           </View>
         }
       />
-      {renderDetailModal()}
     </SafeAreaView>
   );
 }
@@ -492,13 +389,13 @@ export default function EventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f9fafb', // bg-gray-50
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f9fafb',
   },
   loadingText: {
     marginTop: 12,
@@ -509,6 +406,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
+  // イベントカード
   eventCard: {
     borderRadius: 16,
     borderWidth: 2,
@@ -521,306 +419,173 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  // カテゴリバッジ
   categoryBadge: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 9999,
   },
   categoryText: {
     fontSize: 12,
     fontWeight: 'bold',
   },
+  // ステータスバッジ
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  statusCheckIcon: {
+    marginRight: 4,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
+  // タイトル
   eventTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#111827', // text-gray-900
+    marginBottom: 8,
+  },
+  // イベント情報
+  eventInfoSection: {
     marginBottom: 12,
   },
   eventInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  infoTextBold: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151', // text-gray-700
+    marginLeft: 8,
   },
   infoText: {
     fontSize: 16,
-    color: '#4b5563',
+    color: '#374151',
     marginLeft: 8,
   },
+  // 説明
   eventDescription: {
-    fontSize: 15,
-    color: '#6b7280',
-    lineHeight: 22,
-    marginTop: 8,
-    marginBottom: 8,
+    fontSize: 16,
+    color: '#4b5563', // text-gray-600
+    lineHeight: 24,
+    marginBottom: 12,
   },
-  deadlineContainer: {
-    marginTop: 12,
-  },
+  // 回答期限
   deadlineText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e3a8a',
+    color: '#1e3a8a', // text-blue-900
+    marginBottom: 12,
   },
-  deadlinePassed: {
-    color: '#6b7280',
+  deadlineTextPassed: {
+    color: '#6b7280', // text-gray-500
   },
+  deadlineExpiredText: {
+    color: '#dc2626', // text-red-600
+    marginLeft: 8,
+  },
+  // 出欠セクション
   attendanceSection: {
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    marginTop: 16,
+    borderTopColor: '#e5e7eb', // border-gray-200
     paddingTop: 16,
   },
   attendanceLabel: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 12,
+    color: '#111827',
+    marginBottom: 8,
   },
   attendanceButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
+  // 出欠ボタン
   attendanceButton: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#d1d5db',
+    borderColor: '#d1d5db', // border-gray-300
     backgroundColor: '#ffffff',
     alignItems: 'center',
   },
   attendanceButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#111827',
   },
-  attendingButton: {
-    backgroundColor: '#22c55e',
-    borderColor: '#16a34a',
+  // 出席ボタン（アクティブ）
+  attendingButtonActive: {
+    backgroundColor: '#16a34a', // bg-green-600
+    borderColor: '#15803d', // border-green-700
   },
-  attendingButtonText: {
+  attendingButtonTextActive: {
     color: '#ffffff',
   },
-  absentButton: {
-    backgroundColor: '#ef4444',
-    borderColor: '#dc2626',
+  // 欠席ボタン（アクティブ）
+  absentButtonActive: {
+    backgroundColor: '#dc2626', // bg-red-600
+    borderColor: '#b91c1c', // border-red-700
   },
-  absentButtonText: {
+  absentButtonTextActive: {
     color: '#ffffff',
   },
+  // 未定ボタン（アクティブ）
+  undecidedButtonActive: {
+    backgroundColor: '#eab308', // bg-yellow-500
+    borderColor: '#ca8a04', // border-yellow-600
+  },
+  undecidedButtonTextActive: {
+    color: '#ffffff',
+  },
+  // 期限切れ通知
   expiredNotice: {
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    marginTop: 16,
     paddingTop: 16,
   },
   expiredNoticeText: {
     textAlign: 'center',
-    color: '#9ca3af',
+    color: '#6b7280',
     fontSize: 14,
   },
+  cancelledNoticeText: {
+    textAlign: 'center',
+    color: '#dc2626', // text-red-600
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  postponedNoticeText: {
+    textAlign: 'center',
+    color: '#d97706', // text-amber-600
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // 空状態
   emptyContainer: {
     padding: 48,
     alignItems: 'center',
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#374151',
+    marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     color: '#9ca3af',
     fontSize: 16,
     textAlign: 'center',
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  modalBackButton: {
-    padding: 8,
-  },
-  modalBackText: {
-    fontSize: 24,
-    color: '#374151',
-  },
-  modalTitle: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    textAlign: 'center',
-  },
-  modalHeaderSpacer: {
-    width: 40,
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
-  modalEventTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 20,
-  },
-  infoCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  infoCardRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  infoCardIcon: {
-    fontSize: 20,
-    marginRight: 12,
-    marginTop: 2,
-  },
-  infoCardIconStyle: {
-    marginRight: 12,
-    marginTop: 2,
-  },
-  infoCardLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  infoCardValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  infoCardValueExpired: {
-    color: '#ef4444',
-  },
-  descriptionCard: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-  },
-  descriptionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 12,
-  },
-  descriptionText: {
-    fontSize: 16,
-    color: '#4b5563',
-    lineHeight: 24,
-  },
-  modalAttendanceSection: {
-    marginBottom: 20,
-  },
-  modalAttendanceLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 16,
-  },
-  modalAttendanceButton: {
-    paddingVertical: 18,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  modalAttendingButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '#d1d5db',
-  },
-  modalAttendingButtonActive: {
-    backgroundColor: '#22c55e',
-    borderColor: '#16a34a',
-  },
-  modalAbsentButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '#d1d5db',
-  },
-  modalAbsentButtonActive: {
-    backgroundColor: '#ef4444',
-    borderColor: '#dc2626',
-  },
-  modalAttendanceButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-  },
-  modalAttendingButtonTextActive: {
-    color: '#ffffff',
-  },
-  modalAbsentButtonTextActive: {
-    color: '#ffffff',
-  },
-  modalButtonCheck: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  modalExpiredNotice: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalExpiredNoticeText: {
-    color: '#6b7280',
-    fontSize: 16,
-  },
-  thankYouMessage: {
-    backgroundColor: '#dbeafe',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  thankYouIcon: {
-    color: '#1e3a8a',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  thankYouText: {
-    color: '#1e3a8a',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

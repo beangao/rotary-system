@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -45,9 +46,11 @@ export default function MembersScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMembers();
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

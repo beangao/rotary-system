@@ -18,7 +18,7 @@
 ├─────────────────────────────────────┤
 │  次回のイベント・例会               │
 │  ├─ 日時・会場                     │
-│  ├─ 卓話・内容（あれば）            │
+│  ├─ 説明（あれば）                 │
 │  └─ 出欠回答ボタン                 │
 ├─────────────────────────────────────┤
 │  クイックアクセス                   │
@@ -101,11 +101,13 @@ Response:
 | 条件 | 説明 |
 |------|------|
 | クラブ | ログインユーザーが所属するクラブのイベントのみ |
-| 公開状態 | `isPublished = true` のみ表示 |
+| **公開状態** | **`status = 'published'` のみ表示**（公開中のみ） |
 | 日時 | 現在日時以降のイベント（`startAt >= now`） |
 | 表示件数 | 最も近い1件のみ |
-| ソート | `startAt` 昇順（近い順） |
+| **ソート** | **`startAt` 昇順（直近順）** |
 | APIパラメータ | `upcoming=true` |
+
+※ イベント一覧画面とは異なり、HOME では「公開中（published）」のイベントのみ表示します。
 
 ### 表示データ
 
@@ -116,8 +118,9 @@ interface NextEventDisplay {
   startAt: string;            // 開始日時
   endAt: string | null;       // 終了日時
   venue: string | null;       // 会場名
-  description: string | null; // 卓話・内容
+  description: string | null; // 説明（DBの内容をそのまま表示）
   responseDeadline: string | null; // 回答期限
+  status: EventStatus;        // ステータス
   myAttendance: {             // 自分の出欠回答
     status: 'attending' | 'absent' | 'undecided' | null;
   } | null;
@@ -133,9 +136,9 @@ interface NextEventDisplay {
 - 地図ピンアイコン + 会場名（ある場合）
 - 回答期限バッジ（ある場合）
 
-**卓話セクション（水色背景、description がある場合のみ）**
-- メッセージアイコン + 「卓話・内容」ラベル
-- 詳細テキスト
+**説明セクション（description がある場合のみ）**
+- DBの内容をそのまま表示（シンプルなテキスト表示）
+- ※「卓話・内容」ラベルやアイコンは表示しない
 
 **出欠回答セクション（白背景）**
 - 「出欠のご回答」タイトル
@@ -146,6 +149,21 @@ interface NextEventDisplay {
 - 白背景カード
 - カレンダーアイコン（グレー）
 - 「予定されているイベント・例会はありません」テキスト
+
+### 出欠回答条件
+
+出欠回答は以下の条件を**すべて**満たす場合のみ可能：
+
+| 条件 | 説明 |
+|------|------|
+| **公開中** | イベントステータスが `published` であること |
+| **期限内** | `responseDeadline` が設定されている場合、現在日時が期限前であること |
+
+```typescript
+const canSubmitAttendance = nextEvent &&
+  nextEvent.status === 'published' &&
+  !isDeadlinePassed(nextEvent.responseDeadline);
+```
 
 ### 出欠回答の状態遷移
 
@@ -168,9 +186,9 @@ interface NextEventDisplay {
 
 ### API
 
-**イベント一覧取得**
+**イベント一覧取得（HOME用）**
 ```
-GET /api/events?status=published
+GET /api/events?upcoming=true
 
 Response:
 {
@@ -180,7 +198,7 @@ Response:
       {
         "id": "...",
         "title": "第123回例会",
-        "description": "卓話：〇〇について",
+        "description": "内容の説明...",
         "eventType": "meeting",
         "startAt": "2024-01-20T12:00:00Z",
         "endAt": "2024-01-20T14:00:00Z",
@@ -200,6 +218,11 @@ Response:
   }
 }
 ```
+
+※ `upcoming=true` の場合、バックエンドは以下の条件でフィルタリング：
+- `status = 'published'`（公開中のみ）
+- `startAt >= now`（今後のイベントのみ）
+- `orderBy: { startAt: 'asc' }`（直近順）
 
 **出欠回答登録**
 ```
@@ -255,7 +278,7 @@ Response:
 [ホーム画面表示]
     │
     ├─ GET /api/events?upcoming=true
-    │   └─ events[0] → 次回のイベント・例会に表示
+    │   └─ events[0] → 次回のイベント・例会に表示（公開中かつ今後のみ）
     │   └─ events[0].myAttendance → 出欠状態
     │
     └─ GET /api/notifications?status=published
@@ -264,7 +287,23 @@ Response:
 
 ---
 
-## Pull-to-Refresh
+## データ更新タイミング
+
+### タブフォーカス時の自動更新
+
+`useFocusEffect` を使用し、タブに切り替えた際に自動でデータを再取得します。
+
+```typescript
+import { useFocusEffect } from 'expo-router';
+
+useFocusEffect(
+  useCallback(() => {
+    fetchData();
+  }, [])
+);
+```
+
+### Pull-to-Refresh
 
 スワイプダウンで画面全体を更新：
 1. `refreshing` 状態を true に
@@ -287,13 +326,15 @@ Response:
 
 ## イベントステータス
 
-| 値 | 説明 | 会員表示 |
-|----|------|----------|
-| `draft` | 下書き | 非表示 |
-| `published` | 公開中 | 表示 |
-| `closed` | 締切 | 表示（回答不可） |
-| `cancelled` | 中止 | 表示 |
-| `postponed` | 延期 | 表示 |
+| 値 | 説明 | HOME表示 | 一覧表示 |
+|----|------|----------|----------|
+| `draft` | 下書き | 非表示 | 非表示 |
+| `published` | 公開中 | **表示** | 表示 |
+| `closed` | 締切 | 非表示 | 表示（回答不可） |
+| `cancelled` | 中止 | 非表示 | 表示 |
+| `postponed` | 延期 | 非表示 | 表示 |
+
+※ HOME では「公開中（published）」のみ表示
 
 ---
 
@@ -315,7 +356,7 @@ Response:
 | API取得失敗 | コンソールエラー出力、ローディング終了 |
 | データなし（イベント） | 「予定されているイベント・例会はありません」表示 |
 | データなし（お知らせ） | 「新しいお知らせはありません」表示 |
-| 出欠回答失敗 | コンソールエラー出力、UI状態は変更しない |
+| 出欠回答失敗 | **Alert でエラーメッセージを表示**、UI状態は変更しない |
 
 ---
 
@@ -346,6 +387,7 @@ apps/mobile/
 ## 関連ドキュメント
 
 - [モバイル会員認証フロー](./mobile-member-auth.md)
+- [モバイルイベント一覧](./mobile-events.md)
 
 ---
 
@@ -354,3 +396,4 @@ apps/mobile/
 | 日付 | 内容 |
 |------|------|
 | 2026-02-01 | 初版作成 |
+| 2026-02-01 | イベント表示条件を「公開中のみ」に修正、説明表示をシンプル化、タブフォーカス時の自動更新追加 |

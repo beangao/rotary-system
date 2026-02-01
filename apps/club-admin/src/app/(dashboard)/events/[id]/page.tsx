@@ -148,7 +148,7 @@ export default function EventDetailPage() {
         ? new Date(`${data.date}T${data.time}`).toISOString()
         : new Date(`${data.date}T00:00:00`).toISOString();
 
-      const response = await eventsApi.update(id, {
+      const updateData = {
         title: data.title,
         description: data.description || null,
         eventType: data.eventType,
@@ -156,15 +156,23 @@ export default function EventDetailPage() {
         venue: data.venue,
         responseDeadline: data.deadlineDate ? new Date(`${data.deadlineDate}T23:59:59`).toISOString() : null,
         status: data.status,
-      });
+      };
+
+      console.log('Updating event with data:', updateData);
+
+      const response = await eventsApi.update(id, updateData);
+
+      console.log('Update response:', response.data);
 
       if (response.data.success) {
         router.push('/events');
       } else {
         setError(response.data.error || 'イベントの更新に失敗しました');
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'イベントの更新に失敗しました');
+    } catch (err: unknown) {
+      console.error('Update error:', err);
+      const error = err as { response?: { data?: { error?: string } }; message?: string };
+      setError(error.response?.data?.error || error.message || 'イベントの更新に失敗しました');
     }
   };
 
@@ -408,12 +416,27 @@ export default function EventDetailPage() {
           <div className="pt-6 border-t-2 border-gray-100 space-y-3">
             <Button
               type="button"
-              onClick={handleSubmit(onSubmit)}
+              onClick={() => {
+                console.log('Button clicked, form values:', watchedValues);
+                handleSubmit(
+                  (data) => {
+                    console.log('Validation passed, submitting:', data);
+                    onSubmit(data);
+                  },
+                  (errors) => {
+                    console.log('Validation failed:', errors);
+                    const errorFields = Object.keys(errors);
+                    if (errorFields.length > 0) {
+                      setError('入力内容を確認してください: ' + errorFields.join(', '));
+                    }
+                  }
+                )();
+              }}
               isLoading={isSubmitting}
               className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
             >
               <CheckCircle className="h-5 w-5" />
-              変更
+              変更を保存
             </Button>
             <div className="flex gap-3">
               <Button

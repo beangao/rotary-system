@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -26,19 +27,28 @@ export default function MyPageScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await api.getProfile();
       if (response.success && response.data) {
         setUser(response.data);
       }
     } catch (error) {
-      console.error('Failed to refresh profile:', error);
-    } finally {
-      setRefreshing(false);
+      console.error('Failed to fetch profile:', error);
     }
   }, [setUser]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchProfile();
+    setRefreshing(false);
+  }, [fetchProfile]);
 
   const handleLogout = () => {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
