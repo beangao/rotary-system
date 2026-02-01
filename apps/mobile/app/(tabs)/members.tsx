@@ -141,7 +141,7 @@ export default function MembersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       {/* ヘッダー */}
       <LinearGradient colors={['#1e3a8a', '#1d4ed8']} style={styles.header}>
         <Text style={styles.headerTitle}>会員名簿</Text>

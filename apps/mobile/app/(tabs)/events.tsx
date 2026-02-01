@@ -365,7 +365,7 @@ export default function EventsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <FlatList
         data={events}
         renderItem={renderEvent}
