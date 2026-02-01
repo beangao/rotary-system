@@ -1,0 +1,31 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners -->
+  <rect width="1024" height="1024" rx="224" fill="#17458F"/>
+
+  <!-- Glow circle -->
+  <circle cx="512" cy="512" r="420" fill="#1E5299"/>
+
+  <!-- Outer ring -->
+  <circle cx="512" cy="512" r="320" fill="#F7A81B"/>
+
+  <!-- Inner ring cutout -->
+  <circle cx="512" cy="512" r="260" fill="#17458F"/>
+
+  <!-- Hub outer -->
+  <circle cx="512" cy="512" r="110" fill="#F7A81B"/>
+
+  <!-- Hub inner -->
+  <circle cx="512" cy="512" r="70" fill="#17458F"/>
+
+  <!-- Spoke North -->
+  <rect x="490" y="192" width="44" height="210" fill="#F7A81B"/>
+
+  <!-- Spoke South -->
+  <rect x="490" y="622" width="44" height="210" fill="#F7A81B"/>
+
+  <!-- Spoke East -->
+  <rect x="622" y="490" width="210" height="44" fill="#F7A81B"/>
+
+  <!-- Spoke West -->
+  <rect x="192" y="490" width="210" height="44" fill="#F7A81B"/>
+</svg>
