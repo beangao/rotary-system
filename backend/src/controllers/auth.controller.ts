@@ -201,8 +201,10 @@ export const memberLogin = (req: Request, res: Response, next: NextFunction) => 
       res.json({
         success: true,
         data: {
-          accessToken,
-          refreshToken,
+          tokens: {
+            accessToken,
+            refreshToken,
+          },
           user: {
             id: user.id,
             email: user.email,
@@ -248,8 +250,10 @@ export const clubAdminLogin = (req: Request, res: Response, next: NextFunction) 
       res.json({
         success: true,
         data: {
-          accessToken,
-          refreshToken,
+          tokens: {
+            accessToken,
+            refreshToken,
+          },
           user: {
             id: user.id,
             email: user.email,
@@ -285,7 +289,9 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     res.json({
       success: true,
       data: {
-        accessToken: newAccessToken,
+        tokens: {
+          accessToken: newAccessToken,
+        },
       },
     });
   } catch (error) {

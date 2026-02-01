@@ -22,7 +22,6 @@ import { Lock, Bell, Home, ChevronLeft, ChevronRight, GraduationCap, Heart, File
 export default function MyPageScreen() {
   const router = useRouter();
   const { user, logout, setUser } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -49,7 +48,8 @@ export default function MyPageScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          router.replace('/');
+          // ルートインデックスへナビゲート（Expo Router v3）
+          router.dismissAll();
         },
       },
     ]);

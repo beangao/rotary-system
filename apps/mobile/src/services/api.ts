@@ -44,13 +44,14 @@ class ApiService {
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
           try {
-            const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-            if (refreshToken) {
+            const currentRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+            if (currentRefreshToken) {
               const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-                refreshToken,
+                refreshToken: currentRefreshToken,
               });
-              const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
-              await this.setTokens(accessToken, newRefreshToken);
+              const { accessToken } = response.data.data.tokens;
+              // accessToken のみ更新（refreshToken は既存のものを維持）
+              await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
               originalRequest.headers.Authorization = `Bearer ${accessToken}`;
               return this.client(originalRequest);
             }
@@ -131,6 +132,20 @@ class ApiService {
   // 現在のユーザー情報取得
   async getMe(): Promise<ApiResponse<User>> {
     const response = await this.client.get('/auth/me');
+    return response.data;
+  }
+
+  // プロフィール取得（getMeのエイリアス）
+  async getProfile(): Promise<ApiResponse<User>> {
+    return this.getMe();
+  }
+
+  // パスワード変更
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.put('/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
     return response.data;
   }
 

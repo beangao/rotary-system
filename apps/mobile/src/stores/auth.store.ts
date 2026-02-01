@@ -8,6 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  hasLoggedOut: boolean; // ログアウト直後フラグ
 
   // 認証フロー用の一時データ
   tempEmail: string | null;
@@ -33,6 +34,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  hasLoggedOut: false,
   tempEmail: null,
   tempCode: null,
 
@@ -43,6 +45,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // トークン読み込み（アプリ起動時）
   loadToken: async () => {
+    // ログアウト直後は再チェックしない
+    if (get().hasLoggedOut) {
+      set({ isLoading: false, hasLoggedOut: false });
+      return;
+    }
     set({ isLoading: true });
     try {
       const token = await api.getToken();
@@ -70,7 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // ログイン
   login: async (email, password) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, hasLoggedOut: false });
     try {
       const response = await api.login(email, password);
       if (response.success && response.data) {
@@ -99,6 +106,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      hasLoggedOut: true, // ログアウト直後フラグ
       tempEmail: null,
       tempCode: null,
     });
