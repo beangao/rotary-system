@@ -548,7 +548,6 @@ const styles = StyleSheet.create({
     color: '#374151',
     lineHeight: 22,
   },
-  },
   // Attendance
   attendanceSection: {
     padding: 20,
