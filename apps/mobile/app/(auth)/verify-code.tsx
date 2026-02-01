@@ -22,6 +22,7 @@ export default function VerifyCodeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(60); // 初回は60秒待機
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
@@ -30,6 +31,16 @@ export default function VerifyCodeScreen() {
       inputRefs.current[0]?.focus();
     }, 100);
   }, []);
+
+  // 再送クールダウンタイマー
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const handleChange = (index: number, value: string) => {
     // 数字のみ許可
@@ -98,6 +109,8 @@ export default function VerifyCodeScreen() {
   };
 
   const handleResend = async () => {
+    if (resendCooldown > 0) return;
+
     setIsResending(true);
     setError(null);
     setCode(['', '', '', '', '', '']);
@@ -109,6 +122,7 @@ export default function VerifyCodeScreen() {
         : await api.sendVerificationCode(email);
       if (response.success) {
         inputRefs.current[0]?.focus();
+        setResendCooldown(60); // 再送成功後、60秒クールダウン開始
       } else {
         setError(response.error || 'コードの再送信に失敗しました');
       }
@@ -195,11 +209,15 @@ export default function VerifyCodeScreen() {
           <Text style={styles.resendLabel}>コードが届きませんか？</Text>
           <TouchableOpacity
             onPress={handleResend}
-            disabled={isVerifying || isResending}
+            disabled={isVerifying || isResending || resendCooldown > 0}
             activeOpacity={0.7}
           >
             {isResending ? (
               <ActivityIndicator color="#1e3a8a" size="small" />
+            ) : resendCooldown > 0 ? (
+              <Text style={styles.resendButtonDisabled}>
+                コードを再送する（{resendCooldown}秒）
+              </Text>
             ) : (
               <Text style={styles.resendButton}>コードを再送する</Text>
             )}
@@ -370,5 +388,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1e3a8a',
+  },
+  resendButtonDisabled: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#9ca3af',
   },
 });
