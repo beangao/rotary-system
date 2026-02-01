@@ -12,7 +12,7 @@ import {
   ResetPasswordInput,
 } from '../validators/auth.validator';
 
-// 認証コード送信（会員向け）
+// 認証コード送信（会員向け・新規登録用）
 export const sendCode = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body as SendCodeInput;
@@ -27,6 +27,11 @@ export const sendCode = async (req: Request, res: Response, next: NextFunction) 
 
     if (!member) {
       throw new AppError('このアドレスは登録されていません。招待メールをご確認ください。', 400);
+    }
+
+    // すでにパスワードが設定されている場合は登録済み
+    if (member.password) {
+      throw new AppError('このアドレスはすでに登録済みです。ログイン画面からログインしてください。', 400);
     }
 
     // 認証コード生成
