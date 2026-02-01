@@ -1,7 +1,7 @@
 # 作業履歴
 
 ## 最新の状態
-- **最終作業日**: 2025-02-01
+- **最終作業日**: 2026-02-01
 - **作業PC**: MacBook
 - **現在のブランチ**: main
 
@@ -14,6 +14,21 @@
 ---
 
 ## 作業ログ
+
+### 2026-02-01
+
+#### 実施内容
+- UI/UX Pro Max レビュー実施
+- events.tsx の残存絵文字アイコンを SVG に置換（🕐→Clock, ⏰→Clock）
+- members.tsx の残存絵文字アイコンを SVG に置換（🔍→Search, ⚙️→Filter）
+- events.tsx infoText スタイルに marginLeft 追加（アイコンとの間隔調整）
+- 未使用の emoji 関連スタイルを削除
+
+#### 変更ファイル
+- `apps/mobile/app/(tabs)/events.tsx`
+- `apps/mobile/app/(tabs)/members.tsx`
+
+---
 
 ### 2025-02-01
 

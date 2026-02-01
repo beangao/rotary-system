@@ -147,7 +147,7 @@ export default function MembersScreen() {
       {/* 検索バー */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Search size={18} color="#9ca3af" strokeWidth={2} style={styles.searchIconStyle} />
           <TextInput
             style={styles.searchInput}
             placeholder="名前、会社名、職業で検索..."
@@ -165,7 +165,7 @@ export default function MembersScreen() {
           style={styles.filterButton}
           onPress={() => setShowFilterModal(true)}
         >
-          <Text style={styles.filterIcon}>⚙️</Text>
+          <Filter size={20} color="#1e3a8a" strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
@@ -425,8 +425,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
   },
-  searchIcon: {
-    fontSize: 18,
+  searchIconStyle: {
     marginRight: 8,
   },
   searchInput: {
@@ -448,9 +447,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  filterIcon: {
-    fontSize: 20,
   },
   countContainer: {
     flexDirection: 'row',

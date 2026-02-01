@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/services/api';
 import { Event } from '../../src/types';
-import { Calendar, MapPin, ChevronLeft, ChevronRight, Check } from 'lucide-react-native';
+import { Calendar, MapPin, ChevronLeft, ChevronRight, Check, Clock } from 'lucide-react-native';
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   meeting: '定例会',
@@ -211,7 +211,7 @@ export default function EventsScreen() {
           <Text style={styles.infoText}>{formatDate(item.startAt)}</Text>
         </View>
         <View style={styles.eventInfoRow}>
-          <Text style={styles.infoIcon}>🕐</Text>
+          <Clock size={16} color="#6b7280" strokeWidth={2} />
           <Text style={styles.infoText}>{formatTimeRange(item.startAt, item.endAt)}</Text>
         </View>
         {item.venue && (
@@ -361,7 +361,7 @@ export default function EventsScreen() {
 
               {selectedEvent.responseDeadline && (
                 <View style={styles.infoCardRow}>
-                  <Text style={styles.infoCardIcon}>⏰</Text>
+                  <Clock size={18} color="#1e3a8a" strokeWidth={2} style={styles.infoCardIconStyle} />
                   <View>
                     <Text style={styles.infoCardLabel}>回答期限</Text>
                     <Text
@@ -552,13 +552,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  infoIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
   infoText: {
     fontSize: 16,
     color: '#4b5563',
+    marginLeft: 8,
   },
   eventDescription: {
     fontSize: 15,
@@ -705,6 +702,10 @@ const styles = StyleSheet.create({
   },
   infoCardIcon: {
     fontSize: 20,
+    marginRight: 12,
+    marginTop: 2,
+  },
+  infoCardIconStyle: {
     marginRight: 12,
     marginTop: 2,
   },
