@@ -157,7 +157,7 @@ class ApiService {
 
   // パスワードリセット
   async resetPassword(email: string, code: string, password: string): Promise<ApiResponse<{ message: string }>> {
-    const response = await this.client.post('/auth/reset/password', { email, code, password });
+    const response = await this.client.post('/auth/reset/password', { email, code, newPassword: password });
     return response.data;
   }
 
