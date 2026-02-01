@@ -77,14 +77,7 @@ export const verifyCode = async (req: Request, res: Response, next: NextFunction
       throw new AppError('認証コードが正しくありません', 400);
     }
 
-    // 認証コードをクリア
-    await prisma.member.update({
-      where: { id: member.id },
-      data: {
-        verificationCode: null,
-        verificationCodeExpiry: null,
-      },
-    });
+    // 認証コードはクリアしない（setPassword/resetPasswordでクリア）
 
     // 一時トークン発行（パスワード設定用）
     const tempToken = generateAccessToken({
@@ -111,16 +104,18 @@ export const setPassword = async (req: Request, res: Response, next: NextFunctio
   try {
     const { email, code, password } = req.body as SetPasswordInput;
 
-    // email + code で会員を特定（認証コード検証後の短時間内に呼ばれる想定）
+    // email + code で会員を特定
     const member = await prisma.member.findFirst({
       where: {
         email: email.toLowerCase(),
+        verificationCode: code,
+        verificationCodeExpiry: { gt: new Date() },
         status: { in: ['invited', 'active'] },
       },
     });
 
     if (!member) {
-      throw new AppError('会員が見つかりません', 400);
+      throw new AppError('認証コードが正しくありません', 400);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -130,6 +125,8 @@ export const setPassword = async (req: Request, res: Response, next: NextFunctio
       data: {
         password: hashedPassword,
         status: 'active',
+        verificationCode: null,
+        verificationCodeExpiry: null,
       },
       include: { club: true },
     });
